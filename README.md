@@ -1,56 +1,52 @@
-# Welcome to your Expo app 👋
+# RoboSudoku 🤖
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A free-to-play, ad-free sudoku game for web, iOS, and Android, built with [Expo](https://expo.dev) (SDK 57, expo-router).
+
+## Features
+
+- Puzzle generation at easy, medium, or hard difficulty (via the MIT-licensed [`sudoku-gen`](https://www.npmjs.com/package/sudoku-gen))
+- Tap a cell, then tap a number to fill it — full keyboard support on web (1–9 to enter, 0/Delete/Backspace to clear, arrow keys to move)
+- Conflict highlighting: an entry that collides with another in its row, column, or 3×3 box shows both cells in red, with a "Show errors" toggle (default on)
+- Automatic completion detection — congratulations when solved, "There is at least 1 error." when not
+- Undo with up to 1000 steps per puzzle
+- Switchable UIs, each with optional skins and layout variants (in progress — see the roadmap)
 
 ## Get started
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+From the dev server you can open the app on web, in [Expo Go](https://expo.dev/go), or in an Android emulator / iOS simulator. `npm run web` starts the web target directly.
 
-### Other setup steps
+## Development
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npm test            # jest (engine + reducer suites)
+npx tsc --noEmit    # typecheck (run `npx expo start` once first to generate expo-env.d.ts)
+npm run lint        # expo lint
+```
 
-## Learn more
+### Project layout
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+src/
+  app/            expo-router routes: index (Game), settings, _layout
+  engine/         pure sudoku logic: generation, conflict/completion rules
+  state/          game reducer (undo, status) + settings context
+  skins/          shared BoardSkin contract
+  uis/            self-contained game UIs (classic/, ... each with its own skins)
+  components/     shared board/number-pad primitives, tabs, themed components
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Design and milestone details live in [dev-notes/development-plan.md](dev-notes/development-plan.md).
 
-## Join the community
+## Roadmap
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [x] M1 — Repurpose the Expo template (Game + Settings tabs)
+- [x] M2 — Sudoku engine, game reducer, tests
+- [x] M3 — First playable version: Classic UI with newspaper skin
+- [ ] M4 — UI registry, remaining Classic skins, settings screen, persistence
+- [ ] M5 — Zen UI (second full UI) + polish
+- [ ] Future — pencil notes (manual + auto), tiered hints

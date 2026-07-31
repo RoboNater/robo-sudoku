@@ -1,0 +1,17 @@
+Initial prompt:
+Please help me make my own free-to-play and ad-free sudoku game for my own use.  It will be called RoboSudoku,
+  and will be playable on web or mobile.  I already created a new Expo project with `npx create-expo-app@latest
+  my-app --template default@sdk-57`, and committed to github. I also enabled the Expo plugin for Claude locally in
+  this project.  Create a plan for the development, including some trials with different UI options... ideally we
+  will have different UIs and be able to switch between them via an app settings menu or similar.  The basic app
+  should start use open source code or algorithms to design the puzzle, with choices of easy, medium, or hard, then
+  display it in a standard grid. The user should be able to tap on a square to highlight it, then tap on a number
+  to set the highlighted square to that number. On web they can also use the keyboard.  It be able to highlight a
+  user's erroneous entry if it collides with (matches) any other entry in the same row, column, or 3x3 block (show
+  the new and colliding entries in red). There should be a checkbox to show/ignore errors, defaulting to show. It
+  should automatically detect a fully filled-in puzzle. If the puzzle is correct it should congratulate the user.
+  If the puzzle is wrong it should say "There is at least 1 error."  There should be an Undo button to undo the
+  most recent entry / action in the current puzzle, with a large history e.g. 1000 actions.  We will add more
+  features and capabilities in the future, including user or auto-filled pencil notes, and hints with varying
+  levels of complexity.
+

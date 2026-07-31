@@ -5,6 +5,12 @@ import type { BoardSkin, SkinPalette } from '@/skins/types';
 
 import { BoardCell } from './board-cell';
 
+/** Widest a board ever gets, and the placeholder's cap before measurement. */
+export const MAX_BOARD_SIZE = 520;
+
+/** Keeps the pre-measurement placeholder from collapsing on very short viewports. */
+const MIN_PLACEHOLDER_SIZE = 280;
+
 interface BoardGridProps {
   board: Board;
   palette: SkinPalette;
@@ -26,6 +32,28 @@ export function BoardGrid({
   onSelectCell,
 }: BoardGridProps) {
   const { gridLineWidth, boxLineWidth, cellGap, boardCornerRadius } = skin.metrics;
+
+  // The statically rendered web HTML has no window to measure, so the caller's
+  // size comes out empty. Hold the board's footprint with an empty frame instead
+  // of painting a collapsed grid that jumps to full size on hydration.
+  if (boardSize <= 0) {
+    return (
+      <View
+        style={{
+          alignSelf: 'center',
+          width: '100%',
+          maxWidth: MAX_BOARD_SIZE,
+          aspectRatio: 1,
+          minHeight: MIN_PLACEHOLDER_SIZE,
+          backgroundColor: palette.boardBackground,
+          borderWidth: boxLineWidth,
+          borderColor: palette.boxLine,
+          borderRadius: boardCornerRadius,
+        }}
+      />
+    );
+  }
+
   const cellSize = Math.floor(
     (boardSize - 2 * boxLineWidth - 8 * gridLineWidth - 8 * cellGap) / GRID_SIZE,
   );

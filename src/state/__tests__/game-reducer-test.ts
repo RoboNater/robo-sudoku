@@ -1,7 +1,8 @@
 import { EMPTY, SOLVED, boardFromString } from '@/engine/test-utils/boards';
-import type { Digit } from '@/engine/types';
+import { BOARD_SIZE, type Digit } from '@/engine/types';
 import {
   UNDO_LIMIT,
+  createEmptyGame,
   createNewGame,
   gameReducer,
   type GameState,
@@ -28,6 +29,23 @@ describe('NEW_GAME', () => {
     expect(state.undoStack).toHaveLength(0);
     expect(state.meta?.difficulty).toBe('easy');
     expect(state.board.some((cell) => cell.value === 0)).toBe(true);
+  });
+});
+
+describe('createEmptyGame', () => {
+  it('is a blank, puzzle-less board that is still playing', () => {
+    const state = createEmptyGame();
+    expect(state.board).toHaveLength(BOARD_SIZE);
+    expect(state.board.every((cell) => cell.value === 0 && !cell.given)).toBe(true);
+    expect(state.meta).toBeNull();
+    expect(state.status).toBe('playing');
+  });
+});
+
+describe('HYDRATE', () => {
+  it('replaces the whole state with the restored one', () => {
+    const restored = createNewGame('hard');
+    expect(gameReducer(createEmptyGame(), { type: 'HYDRATE', state: restored })).toBe(restored);
   });
 });
 

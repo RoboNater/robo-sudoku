@@ -1,6 +1,7 @@
 import { generatePuzzle } from '@/engine/generate';
 import { getConflicts, isBoardFull } from '@/engine/rules';
 import {
+  BOARD_SIZE,
   GRID_SIZE,
   colOf,
   rowOf,
@@ -45,7 +46,22 @@ export function createNewGame(difficulty: Difficulty): GameState {
   return { board, meta, selected: null, undoStack: [], status: 'playing' };
 }
 
-function statusOf(board: Board): GameStatus {
+/**
+ * A blank, puzzle-less board. Web renders statically before storage can be read,
+ * so it starts from this and dispatches `HYDRATE` once the client has mounted —
+ * generating a puzzle during the static render would only be thrown away (and
+ * would not match the one the client generates).
+ */
+export function createEmptyGame(): GameState {
+  const board: Board = Array.from({ length: BOARD_SIZE }, () => ({
+    given: false,
+    value: 0 as CellValue,
+    notes: 0,
+  }));
+  return { board, meta: null, selected: null, undoStack: [], status: 'playing' };
+}
+
+export function statusOf(board: Board): GameStatus {
   if (!isBoardFull(board)) return 'playing';
   return getConflicts(board).size === 0 ? 'won' : 'wrong';
 }

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, Switch, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BoardGrid } from '@/components/game/board-grid';
+import { BoardGrid, MAX_BOARD_SIZE } from '@/components/game/board-grid';
 import { NumberPad } from '@/components/game/number-pad';
 import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
@@ -18,7 +18,6 @@ import { useActiveLayout, useActiveSkin } from '@/uis/ui-context';
 import { PAD_SIDE_MIN_WIDTH } from './layouts';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
-const MAX_BOARD_SIZE = 520;
 const SIDE_PAD_WIDTH = 200;
 const EMPTY_SET = new Set<number>();
 

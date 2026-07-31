@@ -30,6 +30,10 @@ export function NumberPad({
   const keyWidth = Math.floor((width - gap * (columns - 1)) / columns);
   const keyHeight = Math.max(48, keyWidth);
 
+  // Same story as the board: reserve the row's height until the window has been
+  // measured rather than paint a strip of zero-width keys.
+  if (width <= 0) return <View style={{ height: keyHeight }} />;
+
   const key = (label: string, onPress: () => void, fontSize: number, keyStyleWidth = keyWidth) => (
     <Pressable
       key={label}

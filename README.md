@@ -9,7 +9,8 @@ A free-to-play, ad-free sudoku game for web, iOS, and Android, built with [Expo]
 - Conflict highlighting: an entry that collides with another in its row, column, or 3×3 box shows both cells in red, with a "Show errors" toggle (default on)
 - Automatic completion detection — congratulations when solved, "There is at least 1 error." when not
 - Undo with up to 1000 steps per puzzle
-- Switchable UIs, each with optional skins and layout variants (in progress — see the roadmap)
+- Switchable UIs, each with optional skins and layout variants: **Classic** (difficulty toolbar, board, digit pad; 4 skins, pad-below/pad-beside layouts) and **Zen** (bare, board-first, one digit strip that counts down as you place digits)
+- Your settings and the puzzle you are in the middle of are saved automatically and restored when you come back
 
 ## Get started
 
@@ -36,7 +37,7 @@ src/
   engine/         pure sudoku logic: generation, conflict/completion rules
   state/          game reducer (undo, status) + settings context
   skins/          shared BoardSkin contract
-  uis/            self-contained game UIs (classic/, ... each with its own skins)
+  uis/            self-contained game UIs (classic/, zen/, ... each with its own skins)
   components/     shared board/number-pad primitives, tabs, themed components
 ```
 
@@ -47,6 +48,6 @@ Design and milestone details live in [dev-notes/development-plan.md](dev-notes/d
 - [x] M1 — Repurpose the Expo template (Game + Settings tabs)
 - [x] M2 — Sudoku engine, game reducer, tests
 - [x] M3 — First playable version: Classic UI with newspaper skin
-- [ ] M4 — UI registry, remaining Classic skins, settings screen, persistence
-- [ ] M5 — Zen UI (second full UI) + polish
+- [x] M4 — UI registry, remaining Classic skins, settings screen, persistence
+- [x] M5 — Zen UI (second full UI) + polish
 - [ ] Future — pencil notes (manual + auto), tiered hints

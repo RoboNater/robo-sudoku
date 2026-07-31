@@ -1,9 +1,11 @@
 import { classicUI } from './classic';
 import type { GameUI } from './types';
+import { zenUI } from './zen';
 
 /** Every selectable game UI. Adding a UI is one folder plus one line here. */
 export const UIs: Record<string, GameUI> = {
   [classicUI.id]: classicUI,
+  [zenUI.id]: zenUI,
 };
 
 export const DEFAULT_UI_ID = classicUI.id;

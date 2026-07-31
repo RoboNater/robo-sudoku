@@ -10,6 +10,8 @@ export interface SkinPalette {
   givenText: string;
   entryText: string;
   conflictText: string;
+  /** Secondary text (status line, counters); falls back to `gridLine`. */
+  mutedText?: string;
   selectedCell: string;
   peerHighlight: string;
   sameValueHighlight?: string;

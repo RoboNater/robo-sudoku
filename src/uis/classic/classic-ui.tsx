@@ -11,30 +11,61 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { getConflicts } from '@/engine/rules';
 import type { Difficulty } from '@/engine/types';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useGame, useGameDispatch } from '@/state/game-context';
 import { useSettings } from '@/state/settings-context';
+import { useActiveLayout, useActiveSkin } from '@/uis/ui-context';
 
-import { newspaperSkin } from './skins/newspaper';
+import { PAD_SIDE_MIN_WIDTH } from './layouts';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 const MAX_BOARD_SIZE = 520;
+const SIDE_PAD_WIDTH = 200;
 const EMPTY_SET = new Set<number>();
 
 export function ClassicUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
   const { showErrors, setShowErrors } = useSettings();
-  const scheme = useColorScheme();
+  const { skin, palette } = useActiveSkin();
+  const layout = useActiveLayout();
   const { width } = useWindowDimensions();
 
   useKeyboardControls(dispatch);
 
-  const skin = newspaperSkin;
-  const palette = scheme === 'dark' ? skin.dark : skin.light;
-  const boardSize = Math.min(width - 2 * Spacing.three, MAX_BOARD_SIZE);
+  // `pad-side` only fits once the window is wide enough; otherwise it behaves
+  // exactly like `pad-bottom`.
+  const padSide = layout?.id === 'pad-side' && width >= PAD_SIDE_MIN_WIDTH;
+  const available = padSide
+    ? width - SIDE_PAD_WIDTH - Spacing.four - 2 * Spacing.three
+    : width - 2 * Spacing.three;
+  const boardSize = Math.min(available, MAX_BOARD_SIZE);
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
+
+  const board = (
+    <BoardGrid
+      board={game.board}
+      palette={palette}
+      skin={skin}
+      boardSize={boardSize}
+      selected={game.selected}
+      conflicts={showErrors ? conflicts : EMPTY_SET}
+      onSelectCell={(index) =>
+        dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
+      }
+    />
+  );
+
+  const pad = (
+    <NumberPad
+      palette={palette}
+      skin={skin}
+      width={padSide ? SIDE_PAD_WIDTH : boardSize}
+      variant={padSide ? 'grid' : 'row'}
+      onDigit={(digit) => dispatch({ type: 'INPUT', digit })}
+      onClear={() => dispatch({ type: 'CLEAR' })}
+    />
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -53,27 +84,18 @@ export function ClassicUI() {
           ))}
         </View>
 
-        <BoardGrid
-          board={game.board}
-          palette={palette}
-          skin={skin}
-          boardSize={boardSize}
-          selected={game.selected}
-          conflicts={showErrors ? conflicts : EMPTY_SET}
-          onSelectCell={(index) =>
-            dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
-          }
-        />
+        {padSide ? (
+          <View style={styles.sideRow}>
+            {board}
+            {pad}
+          </View>
+        ) : (
+          board
+        )}
 
         <StatusBanner status={game.status} difficulty={game.meta?.difficulty} palette={palette} />
 
-        <NumberPad
-          palette={palette}
-          skin={skin}
-          boardSize={boardSize}
-          onDigit={(digit) => dispatch({ type: 'INPUT', digit })}
-          onClear={() => dispatch({ type: 'CLEAR' })}
-        />
+        {!padSide && pad}
 
         <View style={styles.bottomRow}>
           <Chip
@@ -141,6 +163,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     flexWrap: 'wrap',
     justifyContent: 'center',
+  },
+  sideRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.four,
   },
   bottomRow: {
     flexDirection: 'row',

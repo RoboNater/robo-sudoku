@@ -14,6 +14,8 @@ interface DigitStripProps {
   skin: BoardSkin;
   /** Total width the strip may occupy — matched to the board. */
   width: number;
+  /** Restyles the digits as a reminder that they will write pencil marks. */
+  notesMode?: boolean;
   onDigit: (digit: Digit) => void;
   onClear: () => void;
 }
@@ -31,12 +33,21 @@ function remainingCounts(board: Board): Record<Digit, number> {
  * Zen's answer to the number pad: one borderless line of digits that fades each
  * one out as it gets used up, so the strip doubles as a progress read-out.
  */
-export function DigitStrip({ board, palette, skin, width, onDigit, onClear }: DigitStripProps) {
+export function DigitStrip({
+  board,
+  palette,
+  skin,
+  width,
+  notesMode = false,
+  onDigit,
+  onClear,
+}: DigitStripProps) {
   if (width <= 0) return <View style={{ height: STRIP_HEIGHT }} />;
 
   const gap = Spacing.one;
   const keyWidth = Math.floor((width - gap * 9) / 10);
   const remaining = remainingCounts(board);
+  const notesColor = palette.notesText ?? palette.mutedText ?? palette.gridLine;
 
   return (
     <View style={{ flexDirection: 'row', gap, alignSelf: 'center', height: STRIP_HEIGHT }}>
@@ -57,10 +68,10 @@ export function DigitStrip({ board, palette, skin, width, onDigit, onClear }: Di
             })}>
             <Text
               style={{
-                fontSize: Math.min(28, keyWidth * 0.62),
+                fontSize: Math.min(28, keyWidth * (notesMode ? 0.48 : 0.62)),
                 fontFamily: skin.fonts.cellFontFamily,
                 fontWeight: skin.fonts.givenWeight,
-                color: palette.padText,
+                color: notesMode ? notesColor : palette.padText,
               }}>
               {digit}
             </Text>

@@ -11,13 +11,20 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { getConflicts } from '@/engine/rules';
 import type { Difficulty } from '@/engine/types';
+import type { NoteUnit } from '@/state/game-reducer';
 import { useGame, useGameDispatch } from '@/state/game-context';
 import { useSettings } from '@/state/settings-context';
+import { useSetAutoClear } from '@/state/use-auto-clear';
 import { useActiveLayout, useActiveSkin } from '@/uis/ui-context';
 
 import { PAD_SIDE_MIN_WIDTH } from './layouts';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+const AUTO_CLEAR_UNITS: { unit: NoteUnit; label: string }[] = [
+  { unit: 'row', label: 'row' },
+  { unit: 'col', label: 'col' },
+  { unit: 'box', label: 'box' },
+];
 const SIDE_PAD_WIDTH = 200;
 const EMPTY_SET = new Set<number>();
 
@@ -25,6 +32,7 @@ export function ClassicUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
   const { showErrors, setShowErrors } = useSettings();
+  const setAutoClear = useSetAutoClear();
   const { skin, palette } = useActiveSkin();
   const layout = useActiveLayout();
   const { width } = useWindowDimensions();
@@ -61,6 +69,7 @@ export function ClassicUI() {
       skin={skin}
       width={padSide ? SIDE_PAD_WIDTH : boardSize}
       variant={padSide ? 'grid' : 'row'}
+      notesMode={game.notesMode}
       onDigit={(digit) => dispatch({ type: 'INPUT', digit })}
       onClear={() => dispatch({ type: 'CLEAR' })}
     />
@@ -103,10 +112,36 @@ export function ClassicUI() {
             disabled={game.undoStack.length === 0}
             onPress={() => dispatch({ type: 'UNDO' })}
           />
+          <Chip
+            label="✎ Notes"
+            active={game.notesMode}
+            onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
+          />
+          <Chip
+            label="Autofill notes"
+            active={false}
+            disabled={game.status === 'won'}
+            onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+          />
           <View style={styles.switchRow}>
             <Switch value={showErrors} onValueChange={setShowErrors} />
             <ThemedText type="small">Show errors</ThemedText>
           </View>
+        </View>
+
+        <View style={styles.bottomRow}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Auto-clear notes:
+          </ThemedText>
+          {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
+            <View key={unit} style={styles.switchRow}>
+              <Switch
+                value={game.autoClearNotes[unit]}
+                onValueChange={(on) => setAutoClear(unit, on)}
+              />
+              <ThemedText type="small">{label}</ThemedText>
+            </View>
+          ))}
         </View>
       </SafeAreaView>
     </ThemedView>
@@ -171,7 +206,9 @@ const styles = StyleSheet.create({
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.four,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
   },
   switchRow: {
     flexDirection: 'row',

@@ -1,4 +1,5 @@
-import { getCandidates, getConflicts, isBoardFull, isBoardSolved } from '@/engine/rules';
+import { getCandidates, getConflicts, isBoardFull, isBoardSolved, peersOf } from '@/engine/rules';
+import { boxOf, colOf, rowOf } from '@/engine/types';
 
 import { EMPTY, SOLVED, boardFromString } from '../test-utils/boards';
 
@@ -89,5 +90,49 @@ describe('getCandidates', () => {
     const board = boardFromString(edit(SOLVED, 40, '-'));
     const missing = Number(SOLVED[40]);
     expect(getCandidates(board, 40)).toBe(1 << (missing - 1));
+  });
+
+  it('consults only the enabled units', () => {
+    let s = EMPTY;
+    s = edit(s, 1, '1'); // same row as index 0
+    s = edit(s, 9, '2'); // same column
+    s = edit(s, 20, '3'); // same box only (row 2, col 2)
+    const board = boardFromString(s);
+
+    const rowOnly = getCandidates(board, 0, { row: true, col: false, box: false });
+    expect(rowOnly & 0b1).toBe(0); // 1 excluded by the row
+    expect(rowOnly & 0b110).toBe(0b110); // 2 and 3 survive
+
+    const noBox = getCandidates(board, 0, { row: true, col: true, box: false });
+    expect(noBox & 0b111).toBe(0b100); // only 3 survives
+  });
+
+  it('keeps every digit a candidate with all units off', () => {
+    const board = boardFromString(SOLVED);
+    expect(getCandidates(board, 40, { row: false, col: false, box: false })).toBe(0b111111111);
+  });
+});
+
+describe('peersOf', () => {
+  it('returns the classic 20 peers, never including the cell itself', () => {
+    const peers = peersOf(40);
+    expect(peers).toHaveLength(20);
+    expect(peers).not.toContain(40);
+    expect(new Set(peers).size).toBe(20);
+    expect(peers.every((p) => rowOf(p) === 4 || colOf(p) === 4 || boxOf(p) === 4)).toBe(true);
+  });
+
+  it('returns just the 8 others in the unit when only one is enabled', () => {
+    const row = peersOf(40, { row: true, col: false, box: false });
+    expect(row).toHaveLength(8);
+    expect(row.every((p) => rowOf(p) === 4)).toBe(true);
+
+    const box = peersOf(40, { row: false, col: false, box: true });
+    expect(box).toHaveLength(8);
+    expect(box.every((p) => boxOf(p) === 4)).toBe(true);
+  });
+
+  it('returns nothing with every unit disabled', () => {
+    expect(peersOf(40, { row: false, col: false, box: false })).toEqual([]);
   });
 });

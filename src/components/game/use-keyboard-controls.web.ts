@@ -3,7 +3,10 @@ import { useEffect, type Dispatch } from 'react';
 import type { Digit } from '@/engine/types';
 import type { GameAction } from '@/state/game-reducer';
 
-/** Digits 1-9 enter a value; 0/Delete/Backspace clear; arrow keys move the selection. */
+/**
+ * Digits 1-9 enter a value (or a pencil mark in notes mode); 0/Delete/Backspace
+ * clear; `n` toggles notes mode; arrow keys move the selection.
+ */
 export function useKeyboardControls(dispatch: Dispatch<GameAction>) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -11,6 +14,10 @@ export function useKeyboardControls(dispatch: Dispatch<GameAction>) {
 
       if (event.key >= '1' && event.key <= '9') {
         dispatch({ type: 'INPUT', digit: Number(event.key) as Digit });
+        return;
+      }
+      if (event.key === 'n' || event.key === 'N') {
+        dispatch({ type: 'TOGGLE_NOTES_MODE' });
         return;
       }
       if (event.key === '0' || event.key === 'Delete' || event.key === 'Backspace') {

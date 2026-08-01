@@ -12,17 +12,42 @@ export interface PerUiSettings {
   layoutId?: string;
 }
 
+/** Auto-clear flags, one per unit a noted digit can conflict in. */
+export interface AutoClearNotes {
+  row: boolean;
+  col: boolean;
+  box: boolean;
+}
+
 export interface SettingsState {
   activeUiId: string;
   showErrors: boolean;
+  /**
+   * Seed for a fresh game only — the live, undoable flags live in GameState.
+   * Kept here so a preference survives winning a puzzle (which clears the game store).
+   */
+  autoClearNotes: AutoClearNotes;
   perUi: Record<string, PerUiSettings>;
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
   activeUiId: 'classic',
   showErrors: true,
+  autoClearNotes: { row: true, col: true, box: true },
   perUi: {},
 };
+
+/** Per-field tolerant: a missing or junk flag falls back to its default. */
+function parseAutoClearNotes(value: unknown): AutoClearNotes {
+  const fallback = DEFAULT_SETTINGS.autoClearNotes;
+  if (typeof value !== 'object' || value === null) return { ...fallback };
+  const { row, col, box } = value as Record<string, unknown>;
+  return {
+    row: typeof row === 'boolean' ? row : fallback.row,
+    col: typeof col === 'boolean' ? col : fallback.col,
+    box: typeof box === 'boolean' ? box : fallback.box,
+  };
+}
 
 function parsePerUi(value: unknown): Record<string, PerUiSettings> {
   if (typeof value !== 'object' || value === null) return {};
@@ -48,10 +73,11 @@ export function parseSettings(raw: string | null): SettingsState {
     return DEFAULT_SETTINGS;
   }
   if (typeof parsed !== 'object' || parsed === null) return DEFAULT_SETTINGS;
-  const { activeUiId, showErrors, perUi } = parsed as Record<string, unknown>;
+  const { activeUiId, showErrors, autoClearNotes, perUi } = parsed as Record<string, unknown>;
   return {
     activeUiId: typeof activeUiId === 'string' ? activeUiId : DEFAULT_SETTINGS.activeUiId,
     showErrors: typeof showErrors === 'boolean' ? showErrors : DEFAULT_SETTINGS.showErrors,
+    autoClearNotes: parseAutoClearNotes(autoClearNotes),
     perUi: parsePerUi(perUi),
   };
 }

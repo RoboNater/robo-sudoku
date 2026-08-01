@@ -57,11 +57,11 @@ Later UIs = new folder + one registry line; the settings screen adapts automatic
 ```ts
 // src/engine/types.ts
 type Digit = 1|2|3|4|5|6|7|8|9;  type CellValue = 0 | Digit;
-interface Cell { given: boolean; value: CellValue; notes: number /* bitmask, future pencil notes */ }
+interface Cell { given: boolean; value: CellValue; notes: number /* pencil-note bitmask, M6 */ }
 type Board = Cell[];  // 81, index = row*9+col
 ```
 
-- `src/engine/rules.ts`: `getConflicts(board): Set<number>` (both members of any row/col/box duplicate pair flagged — givens includable when a user entry collides), `isBoardFull`, `getCandidates` (future auto-notes). Pure, derived via `useMemo`, never stored. When show-errors is off, conflicts are *hidden*, not skipped — completion detection still works.
+- `src/engine/rules.ts`: `getConflicts(board): Set<number>` (both members of any row/col/box duplicate pair flagged — givens includable when a user entry collides), `isBoardFull`, `getCandidates`/`peersOf` (pencil notes, M6). Pure, derived via `useMemo`, never stored. When show-errors is off, conflicts are *hidden*, not skipped — completion detection still works.
 - `src/state/game-reducer.ts` — React context + `useReducer` (no zustand; React Compiler is already enabled and memoizes cells). State: `{ board, meta: {difficulty, solution}, selected, undoStack, status: 'playing'|'won'|'wrong' }`. Actions: `NEW_GAME`, `SELECT`, `MOVE_SELECTION` (arrows), `INPUT`, `CLEAR`, `UNDO`, `HYDRATE`. `INPUT`/`CLEAR` no-op on given cells and push prior cell state `{index, value, notes}` onto `undoStack` (capped at 1000, oldest dropped). Reducer recomputes `status` when the 81st cell fills: no conflicts → `won` (congratulate), else `wrong` → show exactly **"There is at least 1 error."**
 - `src/state/settings-context.tsx` — `{ activeUiId, showErrors, perUi: { [uiId]: { skinId?, layoutId? } } }`, defaults `classic`/`true`. Write-through persisted as JSON under `robosudoku.settings.v1`.
 - **Persistence**: `expo-sqlite/kv-store` sync API on native (`src/state/storage.ts`) + `localStorage` on web (`storage.web.ts`) — expo-sqlite's web/wasm support won't work with `web.output: "static"`, and Metro platform-split keeps it out of the web bundle. Web defers reads until hydration (copy pattern from `src/hooks/use-color-scheme.web.ts`). Also persist the in-progress game (`robosudoku.game.v1`, debounced write; `HYDRATE` on launch; cleared on win).
@@ -84,7 +84,8 @@ Work happens on milestone branches (`m01-template-updates`, `m02-engine`, …), 
 - **M3 — First playable UI** (branch `m03-playable-ui`): providers in `_layout.tsx`; Classic UI with one hardcoded skin, selection + peer highlight, conflict reds, number pad, undo, status banner, web keyboard, responsive sizing. **Fully playable at end of M3 — first user trial here.**
 - **M4 — UI framework + settings** (branch `m04-ui-framework`): `GameUI` manifest/registry, `useActiveSkin()`/`useActiveLayout()` hooks; all 4 Classic skins + `pad-side` layout; settings screen (UI/skin/layout pickers, show-errors); `expo-sqlite` + storage split; settings persistence.
 - **M5 — Zen UI + polish** (branch `m05-zen-polish`): second UI proving the abstraction; in-progress-game persistence + hydration; win-state flourish (Reanimated available); scaffold eslint via `npx expo lint` and fix findings.
-- **Future** (designed-for): pencil notes (bitmask already in `Cell`), auto-notes via `getCandidates`, tiered hints (solution string retained; solver swap-in behind `generate.ts`).
+- **M6 — Pencil notes** (branch `m06-notes`, plan in `m06-notes-plan.md`): notes mode (keyboard `n`), autofill notes, and three auto-clear flags (row/column/box) that prune peer notes on entry and sweep retroactively when switched on. Undo entries become *groups* of cell snapshots plus the flags an action changed, so one undo reverses an action however many cells it touched; the flags live in `GameState` (undoable) and are mirrored into settings as the seed for a fresh game. Game store goes to `v: 2`, still reading `v: 1`.
+- **Future** (designed-for): tiered hints (solution string retained; solver swap-in behind `generate.ts`).
 
 ## Packages to add
 

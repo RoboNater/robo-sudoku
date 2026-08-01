@@ -1,17 +1,29 @@
-import { Platform, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OptionRow } from '@/components/settings/option-row';
 import { SettingSection } from '@/components/settings/setting-section';
 import { SkinPicker } from '@/components/settings/skin-picker';
+import { ToggleRow } from '@/components/settings/toggle-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useGame } from '@/state/game-context';
+import type { NoteUnit } from '@/state/game-reducer';
 import { useSettings } from '@/state/settings-context';
+import { useSetAutoClear } from '@/state/use-auto-clear';
 import { getUI, listUIs } from '@/uis';
+
+const AUTO_CLEAR_UNITS: { unit: NoteUnit; label: string }[] = [
+  { unit: 'row', label: 'Auto-clear notes in the same row' },
+  { unit: 'col', label: 'Auto-clear notes in the same column' },
+  { unit: 'box', label: 'Auto-clear notes in the same box' },
+];
 
 export default function SettingsScreen() {
   const settings = useSettings();
+  const game = useGame();
+  const setAutoClear = useSetAutoClear();
 
   const activeUi = getUI(settings.activeUiId);
   const chosen = settings.perUi[activeUi.id] ?? {};
@@ -73,15 +85,25 @@ export default function SettingsScreen() {
           )}
 
           <SettingSection title="Gameplay">
-            <ThemedView type="backgroundElement" style={styles.toggleRow}>
-              <View style={styles.toggleText}>
-                <ThemedText type="smallBold">Show errors</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Highlight conflicting digits in red while you play.
-                </ThemedText>
-              </View>
-              <Switch value={settings.showErrors} onValueChange={settings.setShowErrors} />
-            </ThemedView>
+            <ToggleRow
+              label="Show errors"
+              description="Highlight conflicting digits in red while you play."
+              value={settings.showErrors}
+              onValueChange={settings.setShowErrors}
+            />
+          </SettingSection>
+
+          <SettingSection
+            title="Notes"
+            subtitle="Applies to the game in progress and is undoable there. These also decide what Autofill notes fills in.">
+            {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
+              <ToggleRow
+                key={unit}
+                label={label}
+                value={game.autoClearNotes[unit]}
+                onValueChange={(on) => setAutoClear(unit, on)}
+              />
+            ))}
           </SettingSection>
         </ScrollView>
       </SafeAreaView>
@@ -108,17 +130,5 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 72 : Spacing.three,
     paddingBottom: BottomTabInset + Spacing.five,
     gap: Spacing.four,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  toggleText: {
-    flex: 1,
-    gap: Spacing.half,
   },
 });

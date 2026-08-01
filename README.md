@@ -50,4 +50,5 @@ Design and milestone details live in [dev-notes/development-plan.md](dev-notes/d
 - [x] M3 — First playable version: Classic UI with newspaper skin
 - [x] M4 — UI registry, remaining Classic skins, settings screen, persistence
 - [x] M5 — Zen UI (second full UI) + polish
-- [ ] Future — pencil notes (manual + auto), tiered hints
+- [x] M6 — Pencil notes: notes mode, autofill, auto-clear by row/column/box, grouped undo
+- [ ] Future — tiered hints

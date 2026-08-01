@@ -12,6 +12,8 @@ export interface SkinPalette {
   conflictText: string;
   /** Secondary text (status line, counters); falls back to `gridLine`. */
   mutedText?: string;
+  /** Pencil-note glyphs; falls back to `mutedText`, then `gridLine`. */
+  notesText?: string;
   selectedCell: string;
   peerHighlight: string;
   sameValueHighlight?: string;

@@ -19,6 +19,8 @@ export interface Settings extends SettingsState {
   hydrated: boolean;
   setActiveUi: (uiId: string) => void;
   setShowErrors: (value: boolean) => void;
+  /** Updates the seed only — use `useSetAutoClear` to change the live game too. */
+  setAutoClearNotes: (unit: keyof SettingsState['autoClearNotes'], value: boolean) => void;
   setSkin: (uiId: string, skinId: string) => void;
   setLayout: (uiId: string, layoutId: string) => void;
 }
@@ -58,6 +60,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (value: boolean) => update((prev) => ({ ...prev, showErrors: value })),
     [update],
   );
+  const setAutoClearNotes = useCallback(
+    (unit: keyof SettingsState['autoClearNotes'], value: boolean) =>
+      update((prev) => ({ ...prev, autoClearNotes: { ...prev.autoClearNotes, [unit]: value } })),
+    [update],
+  );
   const setPerUi = useCallback(
     (uiId: string, change: PerUiSettings) => update((prev) => withPerUi(prev, uiId, change)),
     [update],
@@ -72,8 +79,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ ...state, hydrated, setActiveUi, setShowErrors, setSkin, setLayout }),
-    [state, hydrated, setActiveUi, setShowErrors, setSkin, setLayout],
+    () => ({
+      ...state,
+      hydrated,
+      setActiveUi,
+      setShowErrors,
+      setAutoClearNotes,
+      setSkin,
+      setLayout,
+    }),
+    [state, hydrated, setActiveUi, setShowErrors, setAutoClearNotes, setSkin, setLayout],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

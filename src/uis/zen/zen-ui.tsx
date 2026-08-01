@@ -66,17 +66,32 @@ export function ZenUI() {
           palette={palette}
           skin={skin}
           width={boardSize}
+          notesMode={game.notesMode}
           onDigit={(digit) => dispatch({ type: 'INPUT', digit })}
           onClear={() => dispatch({ type: 'CLEAR' })}
         />
 
         <View style={styles.footer}>
-          <TextButton
-            label="undo"
-            palette={palette}
-            disabled={game.undoStack.length === 0}
-            onPress={() => dispatch({ type: 'UNDO' })}
-          />
+          <View style={styles.footerGroup}>
+            <TextButton
+              label="undo"
+              palette={palette}
+              disabled={game.undoStack.length === 0}
+              onPress={() => dispatch({ type: 'UNDO' })}
+            />
+            <TextButton
+              label="notes"
+              palette={palette}
+              active={game.notesMode}
+              onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
+            />
+            <TextButton
+              label="fill"
+              palette={palette}
+              disabled={game.status === 'won'}
+              onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+            />
+          </View>
           <View style={styles.footerGroup}>
             <Text style={[styles.quiet, { color: palette.mutedText ?? palette.gridLine }]}>new</Text>
             {DIFFICULTIES.map((difficulty) => (

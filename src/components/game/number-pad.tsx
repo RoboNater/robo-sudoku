@@ -13,6 +13,8 @@ interface NumberPadProps {
   width: number;
   /** `row`: 1-9 plus erase on one line. `grid`: 3x3 block with erase beneath. */
   variant?: 'row' | 'grid';
+  /** Restyles the digits as a reminder that they will write pencil marks. */
+  notesMode?: boolean;
   onDigit: (digit: Digit) => void;
   onClear: () => void;
 }
@@ -22,6 +24,7 @@ export function NumberPad({
   skin,
   width,
   variant = 'row',
+  notesMode = false,
   onDigit,
   onClear,
 }: NumberPadProps) {
@@ -33,6 +36,8 @@ export function NumberPad({
   // Same story as the board: reserve the row's height until the window has been
   // measured rather than paint a strip of zero-width keys.
   if (width <= 0) return <View style={{ height: keyHeight }} />;
+
+  const notesColor = palette.notesText ?? palette.mutedText ?? palette.gridLine;
 
   const key = (label: string, onPress: () => void, fontSize: number, keyStyleWidth = keyWidth) => (
     <Pressable
@@ -52,14 +57,16 @@ export function NumberPad({
           fontSize,
           fontFamily: skin.fonts.cellFontFamily,
           fontWeight: skin.fonts.givenWeight,
-          color: palette.padText,
+          color: notesMode ? notesColor : palette.padText,
         }}>
         {label}
       </Text>
     </Pressable>
   );
 
-  const digitKeys = DIGITS.map((digit) => key(String(digit), () => onDigit(digit), keyWidth * 0.5));
+  const digitKeys = DIGITS.map((digit) =>
+    key(String(digit), () => onDigit(digit), keyWidth * (notesMode ? 0.38 : 0.5)),
+  );
 
   if (variant === 'grid') {
     return (

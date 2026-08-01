@@ -39,6 +39,7 @@ describe('parseSettings', () => {
       }),
     );
     expect(parsed).toEqual({
+      ...DEFAULT_SETTINGS,
       activeUiId: 'zen',
       showErrors: true,
       perUi: { classic: { skinId: 'dark-neon', layoutId: 'pad-side' }, zen: {} },
@@ -49,9 +50,35 @@ describe('parseSettings', () => {
     const settings: SettingsState = {
       activeUiId: 'classic',
       showErrors: false,
+      autoClearNotes: { row: false, col: true, box: false },
       perUi: { classic: { skinId: 'high-contrast' } },
     };
     expect(parseSettings(serializeSettings(settings))).toEqual(settings);
+  });
+});
+
+describe('autoClearNotes', () => {
+  const parsed = (autoClearNotes: unknown) =>
+    parseSettings(JSON.stringify({ autoClearNotes })).autoClearNotes;
+
+  it('defaults every unit to on', () => {
+    expect(DEFAULT_SETTINGS.autoClearNotes).toEqual({ row: true, col: true, box: true });
+    expect(parsed(undefined)).toEqual({ row: true, col: true, box: true });
+  });
+
+  it('keeps the flags it recognises and defaults the rest', () => {
+    expect(parsed({ row: false })).toEqual({ row: false, col: true, box: true });
+    expect(parsed({ row: false, col: 'no', box: false })).toEqual({
+      row: false,
+      col: true,
+      box: false,
+    });
+  });
+
+  it('yields the full default object for a malformed value, never undefined', () => {
+    for (const junk of ['nope', 42, null, [false, false, false]]) {
+      expect(parsed(junk)).toEqual({ row: true, col: true, box: true });
+    }
   });
 });
 

@@ -93,8 +93,17 @@ export default function SettingsScreen() {
             />
           </SettingSection>
 
+          <SettingSection title="Notes">
+            <ToggleRow
+              label="Show notes"
+              description="Turning this off hides pencil marks outside of notes mode. Turning on notes mode always shows them."
+              value={settings.notesVisible}
+              onValueChange={settings.setNotesVisible}
+            />
+          </SettingSection>
+
           <SettingSection
-            title="Notes"
+            title="Auto-clear"
             subtitle="Applies to the game in progress and is undoable there. These also decide what Autofill notes fills in.">
             {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
               <ToggleRow

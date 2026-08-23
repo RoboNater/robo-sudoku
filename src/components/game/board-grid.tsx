@@ -19,6 +19,8 @@ interface BoardGridProps {
   selected: number | null;
   /** Conflicting cell indices; already empty when errors are hidden. */
   conflicts: Set<number>;
+  /** Whether pencil notes are drawn; the caller decides this from notes mode + the setting. */
+  notesVisible: boolean;
   onSelectCell: (index: number) => void;
 }
 
@@ -29,6 +31,7 @@ export function BoardGrid({
   boardSize,
   selected,
   conflicts,
+  notesVisible,
   onSelectCell,
 }: BoardGridProps) {
   const { gridLineWidth, boxLineWidth, cellGap, boardCornerRadius } = skin.metrics;
@@ -101,6 +104,7 @@ export function BoardGrid({
                 peer={peer}
                 sameValue={sameValue}
                 conflict={conflicts.has(index)}
+                notesVisible={notesVisible}
                 borderStyle={{
                   ...innerBorder('Right', col),
                   ...innerBorder('Bottom', row),

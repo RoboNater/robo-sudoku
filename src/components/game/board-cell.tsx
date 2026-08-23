@@ -14,6 +14,7 @@ interface BoardCellProps {
   peer: boolean;
   sameValue: boolean;
   conflict: boolean;
+  notesVisible: boolean;
   borderStyle: ViewStyle;
   onPress: () => void;
 }
@@ -27,6 +28,7 @@ export function BoardCell({
   peer,
   sameValue,
   conflict,
+  notesVisible,
   borderStyle,
   onPress,
 }: BoardCellProps) {
@@ -69,6 +71,7 @@ export function BoardCell({
           {cell.value}
         </Text>
       ) : (
+        notesVisible &&
         cell.notes !== 0 && <NotesGrid notes={cell.notes} palette={palette} skin={skin} cellSize={cellSize} />
       )}
     </Pressable>

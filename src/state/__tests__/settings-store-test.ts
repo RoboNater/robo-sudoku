@@ -26,6 +26,14 @@ describe('parseSettings', () => {
     expect(parseSettings('{"activeUiId":42,"showErrors":"yes"}')).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('keeps a valid notesVisible flag and defaults a malformed one', () => {
+    expect(parseSettings('{"notesVisible":false}')).toEqual({
+      ...DEFAULT_SETTINGS,
+      notesVisible: false,
+    });
+    expect(parseSettings('{"notesVisible":"nope"}')).toEqual(DEFAULT_SETTINGS);
+  });
+
   it('drops junk inside perUi but keeps valid entries', () => {
     const parsed = parseSettings(
       JSON.stringify({
@@ -50,6 +58,7 @@ describe('parseSettings', () => {
     const settings: SettingsState = {
       activeUiId: 'classic',
       showErrors: false,
+      notesVisible: false,
       autoClearNotes: { row: false, col: true, box: false },
       perUi: { classic: { skinId: 'high-contrast' } },
     };

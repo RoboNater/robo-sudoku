@@ -87,6 +87,17 @@ export function ClassicUI() {
     />
   );
 
+  const entryControls = (
+    <View style={styles.entryControls}>
+      <Chip
+        label="✎ Notes mode"
+        active={game.notesMode}
+        onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
+      />
+      {pad}
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -107,7 +118,7 @@ export function ClassicUI() {
         {padSide ? (
           <View style={styles.sideRow}>
             {board}
-            {pad}
+            {entryControls}
           </View>
         ) : (
           board
@@ -115,7 +126,7 @@ export function ClassicUI() {
 
         <StatusBanner status={game.status} difficulty={game.meta?.difficulty} palette={palette} />
 
-        {!padSide && pad}
+        {!padSide && entryControls}
 
         <View style={styles.bottomRow}>
           <Chip
@@ -123,11 +134,6 @@ export function ClassicUI() {
             active={false}
             disabled={game.undoStack.length === 0}
             onPress={() => dispatch({ type: 'UNDO' })}
-          />
-          <Chip
-            label="✎ Notes"
-            active={game.notesMode}
-            onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
           />
           <Chip
             label="Autofill notes"
@@ -240,6 +246,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.four,
+  },
+  entryControls: {
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   bottomRow: {
     flexDirection: 'row',

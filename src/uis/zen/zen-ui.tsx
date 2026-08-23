@@ -34,7 +34,7 @@ const VERTICAL_CHROME =
 export function ZenUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
-  const { showErrors } = useSettings();
+  const { showErrors, notesVisible } = useSettings();
   const { skin, palette } = useActiveSkin();
   const { width, height } = useWindowDimensions();
 
@@ -56,6 +56,7 @@ export function ZenUI() {
           boardSize={boardSize}
           selected={game.selected}
           conflicts={showErrors ? conflicts : EMPTY_SET}
+          notesVisible={game.notesMode || notesVisible}
           onSelectCell={(index) =>
             dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
           }

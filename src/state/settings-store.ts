@@ -23,6 +23,11 @@ export interface SettingsState {
   activeUiId: string;
   showErrors: boolean;
   /**
+   * Whether pencil notes are shown outside of notes mode. Notes mode always
+   * shows them regardless of this flag; leaving notes mode reverts to it.
+   */
+  notesVisible: boolean;
+  /**
    * Seed for a fresh game only — the live, undoable flags live in GameState.
    * Kept here so a preference survives winning a puzzle (which clears the game store).
    */
@@ -33,6 +38,7 @@ export interface SettingsState {
 export const DEFAULT_SETTINGS: SettingsState = {
   activeUiId: 'classic',
   showErrors: true,
+  notesVisible: true,
   autoClearNotes: { row: true, col: true, box: true },
   perUi: {},
 };
@@ -73,10 +79,14 @@ export function parseSettings(raw: string | null): SettingsState {
     return DEFAULT_SETTINGS;
   }
   if (typeof parsed !== 'object' || parsed === null) return DEFAULT_SETTINGS;
-  const { activeUiId, showErrors, autoClearNotes, perUi } = parsed as Record<string, unknown>;
+  const { activeUiId, showErrors, notesVisible, autoClearNotes, perUi } = parsed as Record<
+    string,
+    unknown
+  >;
   return {
     activeUiId: typeof activeUiId === 'string' ? activeUiId : DEFAULT_SETTINGS.activeUiId,
     showErrors: typeof showErrors === 'boolean' ? showErrors : DEFAULT_SETTINGS.showErrors,
+    notesVisible: typeof notesVisible === 'boolean' ? notesVisible : DEFAULT_SETTINGS.notesVisible,
     autoClearNotes: parseAutoClearNotes(autoClearNotes),
     perUi: parsePerUi(perUi),
   };

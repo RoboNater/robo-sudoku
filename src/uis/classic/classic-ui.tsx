@@ -31,7 +31,7 @@ const EMPTY_SET = new Set<number>();
 export function ClassicUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
-  const { showErrors, setShowErrors } = useSettings();
+  const { showErrors, setShowErrors, notesVisible, setNotesVisible } = useSettings();
   const setAutoClear = useSetAutoClear();
   const { skin, palette } = useActiveSkin();
   const layout = useActiveLayout();
@@ -57,6 +57,7 @@ export function ClassicUI() {
       boardSize={boardSize}
       selected={game.selected}
       conflicts={showErrors ? conflicts : EMPTY_SET}
+      notesVisible={game.notesMode || notesVisible}
       onSelectCell={(index) =>
         dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
       }
@@ -126,6 +127,10 @@ export function ClassicUI() {
           <View style={styles.switchRow}>
             <Switch value={showErrors} onValueChange={setShowErrors} />
             <ThemedText type="small">Show errors</ThemedText>
+          </View>
+          <View style={styles.switchRow}>
+            <Switch value={notesVisible} onValueChange={setNotesVisible} />
+            <ThemedText type="small">Show notes</ThemedText>
           </View>
         </View>
 

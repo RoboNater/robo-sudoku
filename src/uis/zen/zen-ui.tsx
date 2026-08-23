@@ -1,5 +1,14 @@
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BoardGrid } from '@/components/game/board-grid';
@@ -7,7 +16,7 @@ import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { getConflicts } from '@/engine/rules';
-import type { Difficulty } from '@/engine/types';
+import type { Difficulty, Digit } from '@/engine/types';
 import type { SkinPalette } from '@/skins/types';
 import { useGame, useGameDispatch } from '@/state/game-context';
 import { useSettings } from '@/state/settings-context';
@@ -16,15 +25,31 @@ import { useActiveSkin } from '@/uis/ui-context';
 import { DigitStrip, STRIP_HEIGHT } from './digit-strip';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+const SPOTLIGHT_DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const EMPTY_SET = new Set<number>();
 
 /** Zen lets the board grow as large as the window allows, within reason. */
 const MAX_ZEN_BOARD = 640;
 const STATUS_HEIGHT = 28;
 const FOOTER_HEIGHT = 34;
+/** Tall enough that the spotlight row's buttons are a real touch target. */
+const SPOTLIGHT_HEIGHT = 36;
+/**
+ * Under this the spotlight row wraps onto a second line and costs the board
+ * twice its height; measured in the running app, where it wraps at 470 and
+ * fits on one line at 480.
+ */
+const SPOTLIGHT_ONE_LINE_WIDTH = 480;
 const TOP_PADDING = Platform.OS === 'web' ? 64 : Spacing.three;
 const VERTICAL_CHROME =
-  STATUS_HEIGHT + STRIP_HEIGHT + FOOTER_HEIGHT + 3 * Spacing.four + TOP_PADDING + BottomTabInset;
+  STATUS_HEIGHT +
+  STRIP_HEIGHT +
+  FOOTER_HEIGHT +
+  4 * Spacing.four +
+  TOP_PADDING +
+  // The safe area's own bottom padding, which the board must also leave room for.
+  Spacing.three +
+  BottomTabInset;
 
 /**
  * A deliberately bare second UI: no toolbar, no cards, no themed chrome — the
@@ -34,13 +59,18 @@ const VERTICAL_CHROME =
 export function ZenUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
-  const { showErrors, notesVisible } = useSettings();
+  const { showErrors, notesVisible, spotlight, setSpotlightOn, setSpotlightDigit } = useSettings();
   const { skin, palette } = useActiveSkin();
   const { width, height } = useWindowDimensions();
 
   useKeyboardControls(dispatch);
 
-  const boardSize = Math.min(width - 2 * Spacing.three, height - VERTICAL_CHROME, MAX_ZEN_BOARD);
+  const spotlightHeight = SPOTLIGHT_HEIGHT * (width < SPOTLIGHT_ONE_LINE_WIDTH ? 2 : 1);
+  const boardSize = Math.min(
+    width - 2 * Spacing.three,
+    height - VERTICAL_CHROME - spotlightHeight,
+    MAX_ZEN_BOARD,
+  );
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
 
@@ -57,6 +87,7 @@ export function ZenUI() {
           selected={game.selected}
           conflicts={showErrors ? conflicts : EMPTY_SET}
           notesVisible={game.notesMode || notesVisible}
+          spotlight={spotlight.on ? spotlight.digit : null}
           onSelectCell={(index) =>
             dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
           }
@@ -71,6 +102,29 @@ export function ZenUI() {
           onDigit={(digit) => dispatch({ type: 'INPUT', digit })}
           onClear={() => dispatch({ type: 'CLEAR' })}
         />
+
+        <View style={styles.spotlightRow}>
+          <TextButton
+            label="spotlight"
+            palette={palette}
+            activeColor={palette.spotlightText}
+            active={spotlight.on}
+            hitStyle={styles.spotlightHit}
+            onPress={() => setSpotlightOn(!spotlight.on)}
+          />
+          {SPOTLIGHT_DIGITS.map((digit) => (
+            <TextButton
+              key={digit}
+              label={String(digit)}
+              palette={palette}
+              activeColor={palette.spotlightText}
+              active={spotlight.on && spotlight.digit === digit}
+              disabled={!spotlight.on}
+              hitStyle={[styles.spotlightHit, styles.spotlightDigit]}
+              onPress={() => setSpotlightDigit(digit)}
+            />
+          ))}
+        </View>
 
         <View style={styles.footer}>
           <View style={styles.footerGroup}>
@@ -115,13 +169,19 @@ function TextButton({
   label,
   palette,
   active,
+  activeColor,
   disabled,
+  hitStyle,
   onPress,
 }: {
   label: string;
   palette: SkinPalette;
   active?: boolean;
+  /** Overrides the usual active ink — the spotlight row uses its own accent. */
+  activeColor?: string;
   disabled?: boolean;
+  /** Padding/minimum size for rows whose labels are too small to tap unaided. */
+  hitStyle?: StyleProp<ViewStyle>;
   onPress: () => void;
 }) {
   return (
@@ -129,13 +189,16 @@ function TextButton({
       role="button"
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({ opacity: disabled ? 0.3 : pressed ? 0.5 : 1 })}>
+      style={({ pressed }) => [
+        { opacity: disabled ? 0.3 : pressed ? 0.5 : 1 },
+        hitStyle,
+      ]}>
       <Text
         style={{
           fontSize: 14,
           letterSpacing: 0.6,
           fontWeight: active ? '700' : '400',
-          color: active ? palette.entryText : palette.padText,
+          color: active ? (activeColor ?? palette.entryText) : palette.padText,
         }}>
         {label}
       </Text>
@@ -164,6 +227,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.four,
     height: FOOTER_HEIGHT,
+  },
+  spotlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    // Row-gap stays 0: on a narrow window the row wraps, and the board is
+    // width-constrained there anyway, so the extra line has room.
+    columnGap: Spacing.one,
+    minHeight: SPOTLIGHT_HEIGHT,
+  },
+  spotlightHit: {
+    height: SPOTLIGHT_HEIGHT,
+    paddingHorizontal: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spotlightDigit: {
+    minWidth: SPOTLIGHT_HEIGHT,
   },
   footerGroup: {
     flexDirection: 'row',

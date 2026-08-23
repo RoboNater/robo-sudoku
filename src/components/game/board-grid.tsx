@@ -1,6 +1,6 @@
 import { View, type ViewStyle } from 'react-native';
 
-import { GRID_SIZE, colOf, boxOf, rowOf, type Board } from '@/engine/types';
+import { GRID_SIZE, colOf, boxOf, rowOf, type Board, type Digit } from '@/engine/types';
 import type { BoardSkin, SkinPalette } from '@/skins/types';
 
 import { BoardCell } from './board-cell';
@@ -21,6 +21,8 @@ interface BoardGridProps {
   conflicts: Set<number>;
   /** Whether pencil notes are drawn; the caller decides this from notes mode + the setting. */
   notesVisible: boolean;
+  /** Digit to spotlight in values and notes, or null when spotlight is off. */
+  spotlight: Digit | null;
   onSelectCell: (index: number) => void;
 }
 
@@ -32,6 +34,7 @@ export function BoardGrid({
   selected,
   conflicts,
   notesVisible,
+  spotlight,
   onSelectCell,
 }: BoardGridProps) {
   const { gridLineWidth, boxLineWidth, cellGap, boardCornerRadius } = skin.metrics;
@@ -105,6 +108,7 @@ export function BoardGrid({
                 sameValue={sameValue}
                 conflict={conflicts.has(index)}
                 notesVisible={notesVisible}
+                spotlight={spotlight}
                 borderStyle={{
                   ...innerBorder('Right', col),
                   ...innerBorder('Bottom', row),

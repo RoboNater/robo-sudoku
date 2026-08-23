@@ -60,9 +60,41 @@ describe('parseSettings', () => {
       showErrors: false,
       notesVisible: false,
       autoClearNotes: { row: false, col: true, box: false },
+      spotlight: { on: true, digit: 7 },
       perUi: { classic: { skinId: 'high-contrast' } },
     };
     expect(parseSettings(serializeSettings(settings))).toEqual(settings);
+  });
+});
+
+describe('spotlight', () => {
+  const parsed = (spotlight: unknown) => parseSettings(JSON.stringify({ spotlight })).spotlight;
+
+  it('defaults to off on digit 1', () => {
+    expect(DEFAULT_SETTINGS.spotlight).toEqual({ on: false, digit: 1 });
+    expect(parsed(undefined)).toEqual({ on: false, digit: 1 });
+  });
+
+  it('keeps a stored flag and digit', () => {
+    expect(parsed({ on: true, digit: 9 })).toEqual({ on: true, digit: 9 });
+  });
+
+  it('defaults each field independently when it is missing or junk', () => {
+    expect(parsed({ on: true })).toEqual({ on: true, digit: 1 });
+    expect(parsed({ digit: 4 })).toEqual({ on: false, digit: 4 });
+    expect(parsed({ on: 'yes', digit: 4 })).toEqual({ on: false, digit: 4 });
+  });
+
+  it('rejects digits outside 1-9', () => {
+    for (const junk of [0, 10, -1, 2.5, '3', null]) {
+      expect(parsed({ on: true, digit: junk })).toEqual({ on: true, digit: 1 });
+    }
+  });
+
+  it('yields the full default object for a malformed value, never undefined', () => {
+    for (const junk of ['nope', 42, null, [true, 3]]) {
+      expect(parsed(junk)).toEqual({ on: false, digit: 1 });
+    }
   });
 });
 

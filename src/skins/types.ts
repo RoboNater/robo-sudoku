@@ -14,6 +14,10 @@ export interface SkinPalette {
   mutedText?: string;
   /** Pencil-note glyphs; falls back to `mutedText`, then `gridLine`. */
   notesText?: string;
+  /** Spotlit digit's glyph, in cell values and notes; falls back to `entryText`. */
+  spotlightText?: string;
+  /** Background behind a cell holding the spotlit value; falls back to `sameValueHighlight`. */
+  spotlightCell?: string;
   selectedCell: string;
   peerHighlight: string;
   sameValueHighlight?: string;

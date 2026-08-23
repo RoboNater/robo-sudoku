@@ -4,6 +4,8 @@
  * throws — unknown UI/skin/layout ids are resolved with fallbacks at render time.
  */
 
+import type { Digit } from '@/engine/types';
+
 export const SETTINGS_KEY = 'robosudoku.settings.v1';
 
 /** Per-UI choices; absent entries mean "use that UI's defaults". */
@@ -19,6 +21,16 @@ export interface AutoClearNotes {
   box: boolean;
 }
 
+/**
+ * Spotlight highlights one digit everywhere it appears — values and pencil
+ * notes alike — and fades everything else. Independent of entry and notes mode,
+ * so the digit only changes when the player picks a new one here.
+ */
+export interface SpotlightSettings {
+  on: boolean;
+  digit: Digit;
+}
+
 export interface SettingsState {
   activeUiId: string;
   showErrors: boolean;
@@ -32,6 +44,7 @@ export interface SettingsState {
    * Kept here so a preference survives winning a puzzle (which clears the game store).
    */
   autoClearNotes: AutoClearNotes;
+  spotlight: SpotlightSettings;
   perUi: Record<string, PerUiSettings>;
 }
 
@@ -40,6 +53,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   showErrors: true,
   notesVisible: true,
   autoClearNotes: { row: true, col: true, box: true },
+  spotlight: { on: false, digit: 1 },
   perUi: {},
 };
 
@@ -52,6 +66,18 @@ function parseAutoClearNotes(value: unknown): AutoClearNotes {
     row: typeof row === 'boolean' ? row : fallback.row,
     col: typeof col === 'boolean' ? col : fallback.col,
     box: typeof box === 'boolean' ? box : fallback.box,
+  };
+}
+
+/** Per-field tolerant, and a digit outside 1-9 falls back to the default. */
+function parseSpotlight(value: unknown): SpotlightSettings {
+  const fallback = DEFAULT_SETTINGS.spotlight;
+  if (typeof value !== 'object' || value === null) return { ...fallback };
+  const { on, digit } = value as Record<string, unknown>;
+  const valid = Number.isInteger(digit) && (digit as number) >= 1 && (digit as number) <= 9;
+  return {
+    on: typeof on === 'boolean' ? on : fallback.on,
+    digit: valid ? (digit as Digit) : fallback.digit,
   };
 }
 
@@ -79,15 +105,14 @@ export function parseSettings(raw: string | null): SettingsState {
     return DEFAULT_SETTINGS;
   }
   if (typeof parsed !== 'object' || parsed === null) return DEFAULT_SETTINGS;
-  const { activeUiId, showErrors, notesVisible, autoClearNotes, perUi } = parsed as Record<
-    string,
-    unknown
-  >;
+  const { activeUiId, showErrors, notesVisible, autoClearNotes, spotlight, perUi } =
+    parsed as Record<string, unknown>;
   return {
     activeUiId: typeof activeUiId === 'string' ? activeUiId : DEFAULT_SETTINGS.activeUiId,
     showErrors: typeof showErrors === 'boolean' ? showErrors : DEFAULT_SETTINGS.showErrors,
     notesVisible: typeof notesVisible === 'boolean' ? notesVisible : DEFAULT_SETTINGS.notesVisible,
     autoClearNotes: parseAutoClearNotes(autoClearNotes),
+    spotlight: parseSpotlight(spotlight),
     perUi: parsePerUi(perUi),
   };
 }

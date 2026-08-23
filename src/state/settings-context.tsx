@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import type { Digit } from '@/engine/types';
 import { useIsHydrated } from '@/hooks/use-is-hydrated';
 
 import {
@@ -22,6 +23,9 @@ export interface Settings extends SettingsState {
   setNotesVisible: (value: boolean) => void;
   /** Updates the seed only — use `useSetAutoClear` to change the live game too. */
   setAutoClearNotes: (unit: keyof SettingsState['autoClearNotes'], value: boolean) => void;
+  setSpotlightOn: (value: boolean) => void;
+  /** Picking a digit never turns spotlight on by itself — the toggle owns that. */
+  setSpotlightDigit: (digit: Digit) => void;
   setSkin: (uiId: string, skinId: string) => void;
   setLayout: (uiId: string, layoutId: string) => void;
 }
@@ -70,6 +74,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       update((prev) => ({ ...prev, autoClearNotes: { ...prev.autoClearNotes, [unit]: value } })),
     [update],
   );
+  const setSpotlightOn = useCallback(
+    (value: boolean) => update((prev) => ({ ...prev, spotlight: { ...prev.spotlight, on: value } })),
+    [update],
+  );
+  const setSpotlightDigit = useCallback(
+    (digit: Digit) => update((prev) => ({ ...prev, spotlight: { ...prev.spotlight, digit } })),
+    [update],
+  );
   const setPerUi = useCallback(
     (uiId: string, change: PerUiSettings) => update((prev) => withPerUi(prev, uiId, change)),
     [update],
@@ -91,6 +103,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setShowErrors,
       setNotesVisible,
       setAutoClearNotes,
+      setSpotlightOn,
+      setSpotlightDigit,
       setSkin,
       setLayout,
     }),
@@ -101,6 +115,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setShowErrors,
       setNotesVisible,
       setAutoClearNotes,
+      setSpotlightOn,
+      setSpotlightDigit,
       setSkin,
       setLayout,
     ],

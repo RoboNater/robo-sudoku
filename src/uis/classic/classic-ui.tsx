@@ -89,10 +89,10 @@ export function ClassicUI() {
 
   const entryControls = (
     <View style={styles.entryControls}>
-      <Chip
-        label="✎ Notes mode"
-        active={game.notesMode}
-        onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
+      <InputModeControl
+        notesMode={game.notesMode}
+        stacked={padSide}
+        onChange={(on) => dispatch({ type: 'SET_NOTES_MODE', on })}
       />
       {pad}
     </View>
@@ -189,6 +189,59 @@ export function ClassicUI() {
   );
 }
 
+function InputModeControl({
+  notesMode,
+  stacked,
+  onChange,
+}: {
+  notesMode: boolean;
+  stacked: boolean;
+  onChange: (notesMode: boolean) => void;
+}) {
+  return (
+    <View style={[styles.inputModeRow, stacked && styles.inputModeStacked]}>
+      <ThemedText type="small" themeColor="textSecondary">
+        Input mode:
+      </ThemedText>
+      <ThemedView
+        type="backgroundElement"
+        role="radiogroup"
+        aria-label="Input mode"
+        style={styles.segmentedControl}>
+        <InputModeOption label="Number" selected={!notesMode} onPress={() => onChange(false)} />
+        <InputModeOption label="Notes" selected={notesMode} onPress={() => onChange(true)} />
+      </ThemedView>
+    </View>
+  );
+}
+
+function InputModeOption({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      role="radio"
+      aria-checked={selected}
+      accessibilityLabel={`${label} mode`}
+      onPress={onPress}
+      style={({ pressed }) => pressed && styles.pressed}>
+      <ThemedView
+        type={selected ? 'backgroundSelected' : 'backgroundElement'}
+        style={styles.inputModeOption}>
+        <ThemedText type="smallBold" themeColor={selected ? 'text' : 'textSecondary'}>
+          {label}
+        </ThemedText>
+      </ThemedView>
+    </Pressable>
+  );
+}
+
 function Chip({
   label,
   active,
@@ -250,6 +303,29 @@ const styles = StyleSheet.create({
   entryControls: {
     alignItems: 'center',
     gap: Spacing.two,
+  },
+  inputModeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  inputModeStacked: {
+    flexDirection: 'column',
+    gap: Spacing.one,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    gap: Spacing.half,
+    padding: Spacing.half,
+    borderRadius: Spacing.three,
+  },
+  inputModeOption: {
+    minWidth: 72,
+    alignItems: 'center',
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Spacing.two,
   },
   bottomRow: {
     flexDirection: 'row',

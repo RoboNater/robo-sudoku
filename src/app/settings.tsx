@@ -93,6 +93,15 @@ export default function SettingsScreen() {
             />
           </SettingSection>
 
+          <SettingSection title="Spotlight">
+            <ToggleRow
+              label="Spotlight a digit"
+              description="Highlights one digit everywhere it appears — values and notes — and fades the rest. Pick which digit on the game screen."
+              value={settings.spotlight.on}
+              onValueChange={settings.setSpotlightOn}
+            />
+          </SettingSection>
+
           <SettingSection title="Notes">
             <ToggleRow
               label="Show notes"

@@ -10,7 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { getConflicts } from '@/engine/rules';
-import type { Difficulty } from '@/engine/types';
+import type { Difficulty, Digit } from '@/engine/types';
 import type { NoteUnit } from '@/state/game-reducer';
 import { useGame, useGameDispatch } from '@/state/game-context';
 import { useSettings } from '@/state/settings-context';
@@ -25,13 +25,22 @@ const AUTO_CLEAR_UNITS: { unit: NoteUnit; label: string }[] = [
   { unit: 'col', label: 'col' },
   { unit: 'box', label: 'box' },
 ];
+const SPOTLIGHT_DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const SIDE_PAD_WIDTH = 200;
 const EMPTY_SET = new Set<number>();
 
 export function ClassicUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
-  const { showErrors, setShowErrors, notesVisible, setNotesVisible } = useSettings();
+  const {
+    showErrors,
+    setShowErrors,
+    notesVisible,
+    setNotesVisible,
+    spotlight,
+    setSpotlightOn,
+    setSpotlightDigit,
+  } = useSettings();
   const setAutoClear = useSetAutoClear();
   const { skin, palette } = useActiveSkin();
   const layout = useActiveLayout();
@@ -58,6 +67,7 @@ export function ClassicUI() {
       selected={game.selected}
       conflicts={showErrors ? conflicts : EMPTY_SET}
       notesVisible={game.notesMode || notesVisible}
+      spotlight={spotlight.on ? spotlight.digit : null}
       onSelectCell={(index) =>
         dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
       }
@@ -136,6 +146,25 @@ export function ClassicUI() {
         </View>
 
         <View style={styles.bottomRow}>
+          <View style={styles.switchRow}>
+            <Switch value={spotlight.on} onValueChange={setSpotlightOn} />
+            <ThemedText type="small">Spotlight</ThemedText>
+          </View>
+          <View style={styles.digitRow}>
+            {SPOTLIGHT_DIGITS.map((digit) => (
+              <Chip
+                key={digit}
+                label={String(digit)}
+                compact
+                active={spotlight.on && spotlight.digit === digit}
+                disabled={!spotlight.on}
+                onPress={() => setSpotlightDigit(digit)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.bottomRow}>
           <ThemedText type="small" themeColor="textSecondary">
             Auto-clear notes:
           </ThemedText>
@@ -157,11 +186,14 @@ export function ClassicUI() {
 function Chip({
   label,
   active,
+  compact,
   disabled,
   onPress,
 }: {
   label: string;
   active: boolean;
+  /** Narrower padding, for the tight run of spotlight digits. */
+  compact?: boolean;
   disabled?: boolean;
   onPress: () => void;
 }) {
@@ -173,7 +205,7 @@ function Chip({
       style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={active ? 'backgroundSelected' : 'backgroundElement'}
-        style={[styles.chip, disabled && styles.disabled]}>
+        style={[styles.chip, compact && styles.chipCompact, disabled && styles.disabled]}>
         <ThemedText type="smallBold" themeColor={active ? 'text' : 'textSecondary'}>
           {label}
         </ThemedText>
@@ -216,6 +248,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.three,
   },
+  digitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.one,
+  },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,6 +264,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
+  },
+  chipCompact: {
+    paddingHorizontal: Spacing.two,
+    minWidth: 30,
+    alignItems: 'center',
   },
   disabled: {
     opacity: 0.4,

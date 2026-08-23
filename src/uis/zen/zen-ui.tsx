@@ -7,7 +7,7 @@ import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { getConflicts } from '@/engine/rules';
-import type { Difficulty } from '@/engine/types';
+import type { Difficulty, Digit } from '@/engine/types';
 import type { SkinPalette } from '@/skins/types';
 import { useGame, useGameDispatch } from '@/state/game-context';
 import { useSettings } from '@/state/settings-context';
@@ -16,15 +16,23 @@ import { useActiveSkin } from '@/uis/ui-context';
 import { DigitStrip, STRIP_HEIGHT } from './digit-strip';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+const SPOTLIGHT_DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const EMPTY_SET = new Set<number>();
 
 /** Zen lets the board grow as large as the window allows, within reason. */
 const MAX_ZEN_BOARD = 640;
 const STATUS_HEIGHT = 28;
 const FOOTER_HEIGHT = 34;
+const SPOTLIGHT_HEIGHT = 24;
 const TOP_PADDING = Platform.OS === 'web' ? 64 : Spacing.three;
 const VERTICAL_CHROME =
-  STATUS_HEIGHT + STRIP_HEIGHT + FOOTER_HEIGHT + 3 * Spacing.four + TOP_PADDING + BottomTabInset;
+  STATUS_HEIGHT +
+  STRIP_HEIGHT +
+  SPOTLIGHT_HEIGHT +
+  FOOTER_HEIGHT +
+  4 * Spacing.four +
+  TOP_PADDING +
+  BottomTabInset;
 
 /**
  * A deliberately bare second UI: no toolbar, no cards, no themed chrome — the
@@ -34,7 +42,7 @@ const VERTICAL_CHROME =
 export function ZenUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
-  const { showErrors, notesVisible } = useSettings();
+  const { showErrors, notesVisible, spotlight, setSpotlightOn, setSpotlightDigit } = useSettings();
   const { skin, palette } = useActiveSkin();
   const { width, height } = useWindowDimensions();
 
@@ -57,6 +65,7 @@ export function ZenUI() {
           selected={game.selected}
           conflicts={showErrors ? conflicts : EMPTY_SET}
           notesVisible={game.notesMode || notesVisible}
+          spotlight={spotlight.on ? spotlight.digit : null}
           onSelectCell={(index) =>
             dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
           }
@@ -71,6 +80,27 @@ export function ZenUI() {
           onDigit={(digit) => dispatch({ type: 'INPUT', digit })}
           onClear={() => dispatch({ type: 'CLEAR' })}
         />
+
+        <View style={styles.spotlightRow}>
+          <TextButton
+            label="spotlight"
+            palette={palette}
+            activeColor={palette.spotlightText}
+            active={spotlight.on}
+            onPress={() => setSpotlightOn(!spotlight.on)}
+          />
+          {SPOTLIGHT_DIGITS.map((digit) => (
+            <TextButton
+              key={digit}
+              label={String(digit)}
+              palette={palette}
+              activeColor={palette.spotlightText}
+              active={spotlight.on && spotlight.digit === digit}
+              disabled={!spotlight.on}
+              onPress={() => setSpotlightDigit(digit)}
+            />
+          ))}
+        </View>
 
         <View style={styles.footer}>
           <View style={styles.footerGroup}>
@@ -115,12 +145,15 @@ function TextButton({
   label,
   palette,
   active,
+  activeColor,
   disabled,
   onPress,
 }: {
   label: string;
   palette: SkinPalette;
   active?: boolean;
+  /** Overrides the usual active ink — the spotlight row uses its own accent. */
+  activeColor?: string;
   disabled?: boolean;
   onPress: () => void;
 }) {
@@ -135,7 +168,7 @@ function TextButton({
           fontSize: 14,
           letterSpacing: 0.6,
           fontWeight: active ? '700' : '400',
-          color: active ? palette.entryText : palette.padText,
+          color: active ? (activeColor ?? palette.entryText) : palette.padText,
         }}>
         {label}
       </Text>
@@ -164,6 +197,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.four,
     height: FOOTER_HEIGHT,
+  },
+  spotlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
+    height: SPOTLIGHT_HEIGHT,
   },
   footerGroup: {
     flexDirection: 'row',

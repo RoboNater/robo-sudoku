@@ -40,7 +40,8 @@ export function BoardCell({
 }: BoardCellProps) {
   const spotlit = spotlight !== null && cell.value === spotlight;
   // Only filled cells recede; an empty one has nothing but its notes to fade.
-  const dimmed = spotlight !== null && cell.value !== 0 && !spotlit;
+  // A conflict never does: a visible error outranks the highlight.
+  const dimmed = spotlight !== null && cell.value !== 0 && !spotlit && !conflict;
 
   const background = selected
     ? palette.selectedCell

@@ -1,5 +1,14 @@
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BoardGrid } from '@/components/game/board-grid';
@@ -23,15 +32,23 @@ const EMPTY_SET = new Set<number>();
 const MAX_ZEN_BOARD = 640;
 const STATUS_HEIGHT = 28;
 const FOOTER_HEIGHT = 34;
-const SPOTLIGHT_HEIGHT = 24;
+/** Tall enough that the spotlight row's buttons are a real touch target. */
+const SPOTLIGHT_HEIGHT = 36;
+/**
+ * Under this the spotlight row wraps onto a second line and costs the board
+ * twice its height; measured in the running app, where it wraps at 470 and
+ * fits on one line at 480.
+ */
+const SPOTLIGHT_ONE_LINE_WIDTH = 480;
 const TOP_PADDING = Platform.OS === 'web' ? 64 : Spacing.three;
 const VERTICAL_CHROME =
   STATUS_HEIGHT +
   STRIP_HEIGHT +
-  SPOTLIGHT_HEIGHT +
   FOOTER_HEIGHT +
   4 * Spacing.four +
   TOP_PADDING +
+  // The safe area's own bottom padding, which the board must also leave room for.
+  Spacing.three +
   BottomTabInset;
 
 /**
@@ -48,7 +65,12 @@ export function ZenUI() {
 
   useKeyboardControls(dispatch);
 
-  const boardSize = Math.min(width - 2 * Spacing.three, height - VERTICAL_CHROME, MAX_ZEN_BOARD);
+  const spotlightHeight = SPOTLIGHT_HEIGHT * (width < SPOTLIGHT_ONE_LINE_WIDTH ? 2 : 1);
+  const boardSize = Math.min(
+    width - 2 * Spacing.three,
+    height - VERTICAL_CHROME - spotlightHeight,
+    MAX_ZEN_BOARD,
+  );
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
 
@@ -87,6 +109,7 @@ export function ZenUI() {
             palette={palette}
             activeColor={palette.spotlightText}
             active={spotlight.on}
+            hitStyle={styles.spotlightHit}
             onPress={() => setSpotlightOn(!spotlight.on)}
           />
           {SPOTLIGHT_DIGITS.map((digit) => (
@@ -97,6 +120,7 @@ export function ZenUI() {
               activeColor={palette.spotlightText}
               active={spotlight.on && spotlight.digit === digit}
               disabled={!spotlight.on}
+              hitStyle={[styles.spotlightHit, styles.spotlightDigit]}
               onPress={() => setSpotlightDigit(digit)}
             />
           ))}
@@ -147,6 +171,7 @@ function TextButton({
   active,
   activeColor,
   disabled,
+  hitStyle,
   onPress,
 }: {
   label: string;
@@ -155,6 +180,8 @@ function TextButton({
   /** Overrides the usual active ink — the spotlight row uses its own accent. */
   activeColor?: string;
   disabled?: boolean;
+  /** Padding/minimum size for rows whose labels are too small to tap unaided. */
+  hitStyle?: StyleProp<ViewStyle>;
   onPress: () => void;
 }) {
   return (
@@ -162,7 +189,10 @@ function TextButton({
       role="button"
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({ opacity: disabled ? 0.3 : pressed ? 0.5 : 1 })}>
+      style={({ pressed }) => [
+        { opacity: disabled ? 0.3 : pressed ? 0.5 : 1 },
+        hitStyle,
+      ]}>
       <Text
         style={{
           fontSize: 14,
@@ -203,8 +233,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    gap: Spacing.three,
+    // Row-gap stays 0: on a narrow window the row wraps, and the board is
+    // width-constrained there anyway, so the extra line has room.
+    columnGap: Spacing.one,
+    minHeight: SPOTLIGHT_HEIGHT,
+  },
+  spotlightHit: {
     height: SPOTLIGHT_HEIGHT,
+    paddingHorizontal: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spotlightDigit: {
+    minWidth: SPOTLIGHT_HEIGHT,
   },
   footerGroup: {
     flexDirection: 'row',

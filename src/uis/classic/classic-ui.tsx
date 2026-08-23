@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Switch, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BoardGrid, MAX_BOARD_SIZE } from '@/components/game/board-grid';
@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { getConflicts } from '@/engine/rules';
 import type { Difficulty, Digit } from '@/engine/types';
+import type { SkinPalette } from '@/skins/types';
 import type { NoteUnit } from '@/state/game-reducer';
 import { useGame, useGameDispatch } from '@/state/game-context';
 import { useSettings } from '@/state/settings-context';
@@ -87,6 +88,18 @@ export function ClassicUI() {
     />
   );
 
+  const entryControls = (
+    <View style={styles.entryControls}>
+      <InputModeControl
+        notesMode={game.notesMode}
+        palette={palette}
+        stacked={padSide}
+        onChange={(on) => dispatch({ type: 'SET_NOTES_MODE', on })}
+      />
+      {pad}
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -107,7 +120,7 @@ export function ClassicUI() {
         {padSide ? (
           <View style={styles.sideRow}>
             {board}
-            {pad}
+            {entryControls}
           </View>
         ) : (
           board
@@ -115,7 +128,7 @@ export function ClassicUI() {
 
         <StatusBanner status={game.status} difficulty={game.meta?.difficulty} palette={palette} />
 
-        {!padSide && pad}
+        {!padSide && entryControls}
 
         <View style={styles.bottomRow}>
           <Chip
@@ -123,11 +136,6 @@ export function ClassicUI() {
             active={false}
             disabled={game.undoStack.length === 0}
             onPress={() => dispatch({ type: 'UNDO' })}
-          />
-          <Chip
-            label="✎ Notes"
-            active={game.notesMode}
-            onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
           />
           <Chip
             label="Autofill notes"
@@ -180,6 +188,76 @@ export function ClassicUI() {
         </View>
       </SafeAreaView>
     </ThemedView>
+  );
+}
+
+function InputModeControl({
+  notesMode,
+  palette,
+  stacked,
+  onChange,
+}: {
+  notesMode: boolean;
+  palette: SkinPalette;
+  stacked: boolean;
+  onChange: (notesMode: boolean) => void;
+}) {
+  const mutedText = palette.mutedText ?? palette.gridLine;
+
+  return (
+    <View style={[styles.inputModeRow, stacked && styles.inputModeStacked]}>
+      <Text style={[styles.inputModeLabel, { color: mutedText }]}>Input mode:</Text>
+      <View
+        role="radiogroup"
+        aria-label="Input mode"
+        style={[styles.segmentedControl, { backgroundColor: palette.padBackground }]}>
+        <InputModeOption
+          label="Number"
+          palette={palette}
+          selected={!notesMode}
+          onPress={() => onChange(false)}
+        />
+        <InputModeOption
+          label="Notes"
+          palette={palette}
+          selected={notesMode}
+          onPress={() => onChange(true)}
+        />
+      </View>
+    </View>
+  );
+}
+
+function InputModeOption({
+  label,
+  palette,
+  selected,
+  onPress,
+}: {
+  label: string;
+  palette: SkinPalette;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      role="radio"
+      aria-checked={selected}
+      accessibilityLabel={`${label} mode`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.inputModeOption,
+        { backgroundColor: selected || pressed ? palette.padPressed : 'transparent' },
+        pressed && styles.pressed,
+      ]}>
+      <Text
+        style={[
+          styles.inputModeOptionText,
+          { color: palette.padText, opacity: selected ? 1 : 0.6 },
+        ]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -240,6 +318,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.four,
+  },
+  entryControls: {
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  inputModeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  inputModeStacked: {
+    flexDirection: 'column',
+    gap: Spacing.one,
+  },
+  inputModeLabel: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    gap: Spacing.half,
+    padding: Spacing.half,
+    borderRadius: Spacing.three,
+  },
+  inputModeOption: {
+    minWidth: 72,
+    alignItems: 'center',
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Spacing.two,
+  },
+  inputModeOptionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
   },
   bottomRow: {
     flexDirection: 'row',

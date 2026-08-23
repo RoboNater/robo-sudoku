@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { remainingCounts } from '@/engine/rules';
 import { type Board, type Digit } from '@/engine/types';
 import type { BoardSkin, SkinPalette } from '@/skins/types';
 
@@ -18,15 +19,6 @@ interface DigitStripProps {
   notesMode?: boolean;
   onDigit: (digit: Digit) => void;
   onClear: () => void;
-}
-
-/** How many of each digit are still missing from the board. */
-function remainingCounts(board: Board): Record<Digit, number> {
-  const counts = { 1: 9, 2: 9, 3: 9, 4: 9, 5: 9, 6: 9, 7: 9, 8: 9, 9: 9 } as Record<Digit, number>;
-  for (const cell of board) {
-    if (cell.value !== 0) counts[cell.value] -= 1;
-  }
-  return counts;
 }
 
 /**

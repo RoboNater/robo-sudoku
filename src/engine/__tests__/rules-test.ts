@@ -1,4 +1,11 @@
-import { getCandidates, getConflicts, isBoardFull, isBoardSolved, peersOf } from '@/engine/rules';
+import {
+  getCandidates,
+  getConflicts,
+  isBoardFull,
+  isBoardSolved,
+  peersOf,
+  remainingCounts,
+} from '@/engine/rules';
 import { boxOf, colOf, rowOf } from '@/engine/types';
 
 import { EMPTY, SOLVED, boardFromString } from '../test-utils/boards';
@@ -67,6 +74,38 @@ describe('isBoardFull / isBoardSolved', () => {
     const board = boardFromString(edit(SOLVED, 40, '-'));
     expect(isBoardFull(board)).toBe(false);
     expect(isBoardSolved(board)).toBe(false);
+  });
+});
+
+describe('remainingCounts', () => {
+  it('starts every digit at nine and decrements filled cells, including givens', () => {
+    const board = boardFromString(edit(edit(EMPTY, 0, '1'), 1, '1'), [0]);
+
+    expect(remainingCounts(board)).toEqual({
+      1: 7,
+      2: 9,
+      3: 9,
+      4: 9,
+      5: 9,
+      6: 9,
+      7: 9,
+      8: 9,
+      9: 9,
+    });
+  });
+
+  it('has no remaining entries for a solved board', () => {
+    expect(remainingCounts(boardFromString(SOLVED))).toEqual({
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+      7: 0,
+      8: 0,
+      9: 0,
+    });
   });
 });
 

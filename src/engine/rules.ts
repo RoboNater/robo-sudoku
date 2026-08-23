@@ -1,4 +1,12 @@
-import { BOARD_SIZE, GRID_SIZE, boxOf, colOf, rowOf, type Board } from './types';
+import {
+  BOARD_SIZE,
+  GRID_SIZE,
+  boxOf,
+  colOf,
+  rowOf,
+  type Board,
+  type Digit,
+} from './types';
 
 type UnitKey = (index: number) => number;
 
@@ -32,6 +40,18 @@ export function getConflicts(board: Board): Set<number> {
 
 export function isBoardFull(board: Board): boolean {
   return board.every((cell) => cell.value !== 0);
+}
+
+/** Number of times each digit still needs to be entered to complete a board. */
+export function remainingCounts(board: Board): Record<Digit, number> {
+  const counts = { 1: 9, 2: 9, 3: 9, 4: 9, 5: 9, 6: 9, 7: 9, 8: 9, 9: 9 } as Record<
+    Digit,
+    number
+  >;
+  for (const cell of board) {
+    if (cell.value !== 0) counts[cell.value] -= 1;
+  }
+  return counts;
 }
 
 /** A full board with no conflicts is by definition a valid solution. */

@@ -1,12 +1,14 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import type { Digit } from '@/engine/types';
+import { remainingCounts } from '@/engine/rules';
+import type { Board, Digit } from '@/engine/types';
 import type { BoardSkin, SkinPalette } from '@/skins/types';
 
 const DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 interface NumberPadProps {
+  board: Board;
   palette: SkinPalette;
   skin: BoardSkin;
   /** Total width the pad may occupy. */
@@ -20,6 +22,7 @@ interface NumberPadProps {
 }
 
 export function NumberPad({
+  board,
   palette,
   skin,
   width,
@@ -38,6 +41,7 @@ export function NumberPad({
   if (width <= 0) return <View style={{ height: keyHeight }} />;
 
   const notesColor = palette.notesText ?? palette.mutedText ?? palette.gridLine;
+  const remaining = remainingCounts(board);
 
   const key = (label: string, onPress: () => void, fontSize: number, keyStyleWidth = keyWidth) => (
     <Pressable
@@ -64,9 +68,38 @@ export function NumberPad({
     </Pressable>
   );
 
-  const digitKeys = DIGITS.map((digit) =>
-    key(String(digit), () => onDigit(digit), keyWidth * (notesMode ? 0.38 : 0.5)),
-  );
+  const digitKeys = DIGITS.map((digit) => {
+    const left = remaining[digit];
+    return (
+      <Pressable
+        key={digit}
+        role="button"
+        accessibilityLabel={`Enter ${digit}, ${left} remaining`}
+        onPress={() => onDigit(digit)}
+        style={({ pressed }) => ({
+          width: keyWidth,
+          height: keyHeight,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: Spacing.two,
+          backgroundColor: pressed ? palette.padPressed : palette.padBackground,
+          opacity: left <= 0 ? 0.25 : 1,
+        })}>
+        <Text
+          style={{
+            fontSize: keyWidth * (notesMode ? 0.38 : 0.5),
+            fontFamily: skin.fonts.cellFontFamily,
+            fontWeight: skin.fonts.givenWeight,
+            color: notesMode ? notesColor : palette.padText,
+          }}>
+          {digit}
+        </Text>
+        <Text style={{ fontSize: Math.min(12, keyWidth * 0.22), color: palette.mutedText ?? palette.gridLine }}>
+          {Math.max(0, left)}
+        </Text>
+      </Pressable>
+    );
+  });
 
   if (variant === 'grid') {
     return (

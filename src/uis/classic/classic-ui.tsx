@@ -239,8 +239,6 @@ function InputModeOption({
   selected: boolean;
   onPress: () => void;
 }) {
-  const mutedText = palette.mutedText ?? palette.gridLine;
-
   return (
     <Pressable
       role="radio"
@@ -255,7 +253,7 @@ function InputModeOption({
       <Text
         style={[
           styles.inputModeOptionText,
-          { color: selected ? palette.padText : mutedText },
+          { color: palette.padText, opacity: selected ? 1 : 0.6 },
         ]}>
         {label}
       </Text>
@@ -336,8 +334,8 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   inputModeLabel: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
   segmentedControl: {
     flexDirection: 'row',
@@ -353,8 +351,8 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
   },
   inputModeOptionText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '600',
   },
   bottomRow: {

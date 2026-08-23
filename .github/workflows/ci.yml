@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate
@@ -29,6 +33,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Generate Expo env types
+        run: npx expo customize tsconfig.json
 
       - name: Type check
         run: npx tsc --noEmit

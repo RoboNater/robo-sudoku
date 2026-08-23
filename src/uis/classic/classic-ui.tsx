@@ -66,6 +66,7 @@ export function ClassicUI() {
 
   const pad = (
     <NumberPad
+      board={game.board}
       palette={palette}
       skin={skin}
       width={padSide ? SIDE_PAD_WIDTH : boardSize}

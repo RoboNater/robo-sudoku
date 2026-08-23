@@ -1,12 +1,14 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import type { Digit } from '@/engine/types';
+import { remainingCounts } from '@/engine/rules';
+import type { Board, Digit } from '@/engine/types';
 import type { BoardSkin, SkinPalette } from '@/skins/types';
 
 const DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 interface NumberPadProps {
+  board: Board;
   palette: SkinPalette;
   skin: BoardSkin;
   /** Total width the pad may occupy. */
@@ -20,6 +22,7 @@ interface NumberPadProps {
 }
 
 export function NumberPad({
+  board,
   palette,
   skin,
   width,
@@ -38,11 +41,19 @@ export function NumberPad({
   if (width <= 0) return <View style={{ height: keyHeight }} />;
 
   const notesColor = palette.notesText ?? palette.mutedText ?? palette.gridLine;
+  const remaining = remainingCounts(board);
 
-  const key = (label: string, onPress: () => void, fontSize: number, keyStyleWidth = keyWidth) => (
+  const key = (
+    label: string,
+    onPress: () => void,
+    fontSize: number,
+    keyStyleWidth = keyWidth,
+    count?: number,
+  ) => (
     <Pressable
       key={label}
       role="button"
+      accessibilityLabel={count === undefined ? undefined : `Enter ${label}, ${count} remaining`}
       onPress={onPress}
       style={({ pressed }) => ({
         width: keyStyleWidth,
@@ -51,6 +62,7 @@ export function NumberPad({
         justifyContent: 'center',
         borderRadius: Spacing.two,
         backgroundColor: pressed ? palette.padPressed : palette.padBackground,
+        opacity: count === 0 ? 0.25 : 1,
       })}>
       <Text
         style={{
@@ -61,11 +73,16 @@ export function NumberPad({
         }}>
         {label}
       </Text>
+      {count === undefined ? null : (
+        <Text style={{ fontSize: Math.min(12, keyWidth * 0.22), color: palette.mutedText ?? palette.gridLine }}>
+          {count}
+        </Text>
+      )}
     </Pressable>
   );
 
   const digitKeys = DIGITS.map((digit) =>
-    key(String(digit), () => onDigit(digit), keyWidth * (notesMode ? 0.38 : 0.5)),
+    key(String(digit), () => onDigit(digit), keyWidth * (notesMode ? 0.38 : 0.5), keyWidth, remaining[digit]),
   );
 
   if (variant === 'grid') {

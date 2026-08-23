@@ -49,7 +49,7 @@ export function remainingCounts(board: Board): Record<Digit, number> {
     number
   >;
   for (const cell of board) {
-    if (cell.value !== 0) counts[cell.value] -= 1;
+    if (cell.value !== 0) counts[cell.value] = Math.max(0, counts[cell.value] - 1);
   }
   return counts;
 }

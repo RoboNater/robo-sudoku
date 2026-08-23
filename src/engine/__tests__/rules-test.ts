@@ -107,6 +107,22 @@ describe('remainingCounts', () => {
       9: 0,
     });
   });
+
+  it('never reports a negative count for an invalid board', () => {
+    const board = boardFromString('1'.repeat(81));
+
+    expect(remainingCounts(board)).toEqual({
+      1: 0,
+      2: 9,
+      3: 9,
+      4: 9,
+      5: 9,
+      6: 9,
+      7: 9,
+      8: 9,
+      9: 9,
+    });
+  });
 });
 
 describe('getCandidates', () => {

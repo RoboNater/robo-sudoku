@@ -68,7 +68,7 @@ export function DigitStrip({
               {digit}
             </Text>
             <Text style={{ fontSize: 10, color: palette.mutedText ?? palette.gridLine }}>
-              {Math.max(0, left)}
+              {left}
             </Text>
           </Pressable>
         );

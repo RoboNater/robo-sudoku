@@ -26,6 +26,7 @@ export interface Settings extends SettingsState {
   setSpotlightOn: (value: boolean) => void;
   /** Picking a digit never turns spotlight on by itself — the toggle owns that. */
   setSpotlightDigit: (digit: Digit) => void;
+  setUnusedNumbers: (unit: keyof SettingsState['unusedNumbers'], value: boolean) => void;
   setSkin: (uiId: string, skinId: string) => void;
   setLayout: (uiId: string, layoutId: string) => void;
 }
@@ -82,6 +83,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (digit: Digit) => update((prev) => ({ ...prev, spotlight: { ...prev.spotlight, digit } })),
     [update],
   );
+  const setUnusedNumbers = useCallback(
+    (unit: keyof SettingsState['unusedNumbers'], value: boolean) =>
+      update((prev) => ({ ...prev, unusedNumbers: { ...prev.unusedNumbers, [unit]: value } })),
+    [update],
+  );
   const setPerUi = useCallback(
     (uiId: string, change: PerUiSettings) => update((prev) => withPerUi(prev, uiId, change)),
     [update],
@@ -105,6 +111,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setAutoClearNotes,
       setSpotlightOn,
       setSpotlightDigit,
+      setUnusedNumbers,
       setSkin,
       setLayout,
     }),
@@ -117,6 +124,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setAutoClearNotes,
       setSpotlightOn,
       setSpotlightDigit,
+      setUnusedNumbers,
       setSkin,
       setLayout,
     ],

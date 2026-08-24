@@ -61,6 +61,7 @@ describe('parseSettings', () => {
       notesVisible: false,
       autoClearNotes: { row: false, col: true, box: false },
       spotlight: { on: true, digit: 7 },
+      unusedNumbers: { row: true, col: false, box: true },
       perUi: { classic: { skinId: 'high-contrast' } },
     };
     expect(parseSettings(serializeSettings(settings))).toEqual(settings);
@@ -94,6 +95,30 @@ describe('spotlight', () => {
   it('yields the full default object for a malformed value, never undefined', () => {
     for (const junk of ['nope', 42, null, [true, 3]]) {
       expect(parsed(junk)).toEqual({ on: false, digit: 1 });
+    }
+  });
+});
+
+describe('unusedNumbers', () => {
+  const parsed = (unusedNumbers: unknown) =>
+    parseSettings(JSON.stringify({ unusedNumbers })).unusedNumbers;
+
+  it('defaults every guide to off', () => {
+    expect(DEFAULT_SETTINGS.unusedNumbers).toEqual({ row: false, col: false, box: false });
+    expect(parsed(undefined)).toEqual({ row: false, col: false, box: false });
+  });
+
+  it('keeps valid flags and defaults malformed fields independently', () => {
+    expect(parsed({ row: true, col: 'yes', box: true })).toEqual({
+      row: true,
+      col: false,
+      box: true,
+    });
+  });
+
+  it('yields the full default object for a malformed value', () => {
+    for (const junk of ['nope', 42, null, [true, true, true]]) {
+      expect(parsed(junk)).toEqual({ row: false, col: false, box: false });
     }
   });
 });

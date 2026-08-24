@@ -19,6 +19,27 @@ const AUTO_CLEAR_UNITS: { unit: NoteUnit; label: string }[] = [
   { unit: 'col', label: 'Auto-clear notes in the same column' },
   { unit: 'box', label: 'Auto-clear notes in the same box' },
 ];
+const UNUSED_NUMBER_UNITS: {
+  unit: keyof ReturnType<typeof useSettings>['unusedNumbers'];
+  label: string;
+  description: string;
+}[] = [
+  {
+    unit: 'row',
+    label: 'Rows',
+    description: 'Show the digits still unused in each row beside the board.',
+  },
+  {
+    unit: 'col',
+    label: 'Columns',
+    description: 'Show the digits still unused in each column above the board.',
+  },
+  {
+    unit: 'box',
+    label: 'Boxes',
+    description: 'Show a 3×3 guide whose cells correspond to the nine puzzle boxes.',
+  },
+];
 
 export default function SettingsScreen() {
   const settings = useSettings();
@@ -100,6 +121,20 @@ export default function SettingsScreen() {
               value={settings.spotlight.on}
               onValueChange={settings.setSpotlightOn}
             />
+          </SettingSection>
+
+          <SettingSection
+            title="Unused numbers"
+            subtitle="Read-only notes around the board update as you fill the puzzle.">
+            {UNUSED_NUMBER_UNITS.map(({ unit, label, description }) => (
+              <ToggleRow
+                key={unit}
+                label={label}
+                description={description}
+                value={settings.unusedNumbers[unit]}
+                onValueChange={(on) => settings.setUnusedNumbers(unit, on)}
+              />
+            ))}
           </SettingSection>
 
           <SettingSection title="Notes">

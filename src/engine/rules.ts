@@ -11,6 +11,13 @@ import {
 type UnitKey = (index: number) => number;
 
 const UNITS: UnitKey[] = [rowOf, colOf, boxOf];
+const ALL_DIGITS_MASK = 0b111111111;
+
+export interface UnusedDigitsByUnit {
+  row: number[];
+  col: number[];
+  box: number[];
+}
 
 /**
  * Indices of every filled cell whose value also appears in another filled
@@ -52,6 +59,30 @@ export function remainingCounts(board: Board): Record<Digit, number> {
     if (cell.value !== 0) counts[cell.value] = Math.max(0, counts[cell.value] - 1);
   }
   return counts;
+}
+
+/**
+ * Bitmasks of digits absent from each row, column, and box (bit d-1 = digit d).
+ * A duplicate value still counts as used; this describes what is visibly absent,
+ * not whether the unit is currently valid.
+ */
+export function getUnusedDigitsByUnit(board: Board): UnusedDigitsByUnit {
+  const unused: UnusedDigitsByUnit = {
+    row: Array<number>(GRID_SIZE).fill(ALL_DIGITS_MASK),
+    col: Array<number>(GRID_SIZE).fill(ALL_DIGITS_MASK),
+    box: Array<number>(GRID_SIZE).fill(ALL_DIGITS_MASK),
+  };
+
+  for (let index = 0; index < BOARD_SIZE; index++) {
+    const { value } = board[index];
+    if (value === 0) continue;
+    const digitBit = 1 << (value - 1);
+    unused.row[rowOf(index)] &= ~digitBit;
+    unused.col[colOf(index)] &= ~digitBit;
+    unused.box[boxOf(index)] &= ~digitBit;
+  }
+
+  return unused;
 }
 
 /** A full board with no conflicts is by definition a valid solution. */
@@ -96,7 +127,7 @@ export function peersOf(index: number, units: NoteUnits = ALL_UNITS): number[] {
  * digit stays a candidate.
  */
 export function getCandidates(board: Board, index: number, units: NoteUnits = ALL_UNITS): number {
-  let candidates = 0b111111111;
+  let candidates = ALL_DIGITS_MASK;
   const row = rowOf(index);
   const col = colOf(index);
   const box = boxOf(index);

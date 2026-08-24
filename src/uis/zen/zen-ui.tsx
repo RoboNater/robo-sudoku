@@ -85,6 +85,7 @@ export function ZenUI() {
     maxBoardSize: MAX_ZEN_BOARD,
     visibility: unusedNumbers,
     boxPlacement,
+    metrics: skin.metrics,
   });
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);

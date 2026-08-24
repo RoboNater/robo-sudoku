@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { getUnusedDigitsByUnit } from '@/engine/rules';
 import { GRID_SIZE, type Board, type Digit } from '@/engine/types';
 import type { BoardSkin, SkinPalette } from '@/skins/types';
 
 import { NotesGrid } from './board-cell';
+import { gridLineWidthAfter } from './board-geometry';
 import { BoardGrid } from './board-grid';
 import {
+  getBoardWithUnusedGeometry,
   UNUSED_GUIDE_GAP,
   type BoxGuidePlacement,
   type UnusedNumberVisibility,
@@ -67,12 +69,19 @@ export function BoardWithUnused({
     return playableBoard;
   }
 
-  const tileSize = Math.floor(boardSize / GRID_SIZE);
+  const geometry = getBoardWithUnusedGeometry(
+    boardSize,
+    unusedNumbers,
+    boxPlacement,
+    skin.metrics,
+  );
+  const { cellSize, stripExtent, boxExtent, sideGuideWidth } = geometry;
   const boxGuide = unusedNumbers.box ? (
     <GuideGrid
       masks={unused.box}
       unit="box"
-      tileSize={tileSize}
+      tileSize={cellSize}
+      guideSize={boxExtent}
       palette={palette}
       skin={skin}
       spotlight={spotlight}
@@ -80,36 +89,61 @@ export function BoardWithUnused({
   ) : null;
 
   return (
-    <View style={styles.guideFrame}>
+    <View style={[styles.guideFrame, { width: geometry.width }]}>
       {unusedNumbers.col && (
-        <GuideStrip
-          masks={unused.col}
-          unit="column"
-          tileSize={tileSize}
-          palette={palette}
-          skin={skin}
-          spotlight={spotlight}
-        />
-      )}
-
-      <View style={styles.boardRow}>
-        {playableBoard}
-        {unusedNumbers.row && (
+        <View style={{ marginLeft: sideGuideWidth }}>
           <GuideStrip
-            masks={unused.row}
-            unit="row"
-            vertical
-            tileSize={tileSize}
+            masks={unused.col}
+            unit="column"
+            tileSize={cellSize}
+            guideLength={boardSize}
+            guideThickness={stripExtent}
             palette={palette}
             skin={skin}
             spotlight={spotlight}
           />
+        </View>
+      )}
+
+      <View
+        style={[
+          styles.boardRow,
+          unusedNumbers.col && { marginTop: UNUSED_GUIDE_GAP },
+        ]}>
+        {sideGuideWidth > 0 && <View style={{ width: sideGuideWidth }} />}
+        {playableBoard}
+        {unusedNumbers.row && (
+          <View style={{ marginLeft: UNUSED_GUIDE_GAP }}>
+            <GuideStrip
+              masks={unused.row}
+              unit="row"
+              vertical
+              tileSize={cellSize}
+              guideLength={boardSize}
+              guideThickness={stripExtent}
+              palette={palette}
+              skin={skin}
+              spotlight={spotlight}
+            />
+          </View>
         )}
-        {boxPlacement === 'side' && boxGuide}
+        {boxPlacement === 'side' && boxGuide && (
+          <View style={{ marginLeft: UNUSED_GUIDE_GAP }}>{boxGuide}</View>
+        )}
       </View>
 
       {boxPlacement === 'bottom' && (
-        <View style={[styles.bottomBoxGuide, { width: boardSize }]}>{boxGuide}</View>
+        <View
+          style={[
+            styles.bottomBoxGuide,
+            {
+              width: boardSize,
+              marginLeft: sideGuideWidth,
+              marginTop: UNUSED_GUIDE_GAP,
+            },
+          ]}>
+          {boxGuide}
+        </View>
       )}
     </View>
   );
@@ -131,12 +165,29 @@ function GuideStrip({
   palette,
   skin,
   spotlight,
+  guideLength,
+  guideThickness,
   vertical = false,
-}: GuideProps & { vertical?: boolean }) {
+}: GuideProps & {
+  guideLength: number;
+  guideThickness: number;
+  vertical?: boolean;
+}) {
+  const borderStyle = {
+    width: vertical ? guideThickness : guideLength,
+    height: vertical ? guideLength : guideThickness,
+    backgroundColor: palette.boardBackground,
+    borderColor: palette.boxLine,
+    borderWidth: skin.metrics.boxLineWidth,
+    borderRadius: skin.metrics.boardCornerRadius,
+  };
+
   return (
     <View
+      accessible
+      accessibilityRole="summary"
       accessibilityLabel={`Unused numbers by ${unit}`}
-      style={[styles.strip, vertical && styles.verticalStrip]}>
+      style={[styles.strip, vertical && styles.verticalStrip, borderStyle]}>
       {masks.map((mask, index) => (
         <GuideTile
           key={index}
@@ -146,28 +197,75 @@ function GuideStrip({
           palette={palette}
           skin={skin}
           spotlight={spotlight}
+          borderStyle={
+            vertical
+              ? {
+                  borderBottomColor:
+                    index % 3 === 2 ? palette.boxLine : palette.gridLine,
+                  borderBottomWidth: gridLineWidthAfter(index, skin.metrics),
+                  marginBottom: index === GRID_SIZE - 1 ? 0 : skin.metrics.cellGap,
+                }
+              : {
+                  borderRightColor:
+                    index % 3 === 2 ? palette.boxLine : palette.gridLine,
+                  borderRightWidth: gridLineWidthAfter(index, skin.metrics),
+                  marginRight: index === GRID_SIZE - 1 ? 0 : skin.metrics.cellGap,
+                }
+          }
         />
       ))}
     </View>
   );
 }
 
-function GuideGrid({ masks, unit, tileSize, palette, skin, spotlight }: GuideProps) {
+function GuideGrid({
+  masks,
+  unit,
+  tileSize,
+  guideSize,
+  palette,
+  skin,
+  spotlight,
+}: GuideProps & { guideSize: number }) {
   return (
     <View
+      accessible
+      accessibilityRole="summary"
       accessibilityLabel="Unused numbers by box"
-      style={[styles.boxGrid, { width: tileSize * 3 }]}>
-      {masks.map((mask, index) => (
-        <GuideTile
-          key={index}
-          mask={mask}
-          label={`${unit} ${index + 1}`}
-          tileSize={tileSize}
-          palette={palette}
-          skin={skin}
-          spotlight={spotlight}
-        />
-      ))}
+      style={[
+        styles.boxGrid,
+        {
+          width: guideSize,
+          height: guideSize,
+          backgroundColor: palette.boardBackground,
+          borderColor: palette.boxLine,
+          borderWidth: skin.metrics.boxLineWidth,
+          borderRadius: skin.metrics.boardCornerRadius,
+        },
+      ]}>
+      {masks.map((mask, index) => {
+        const row = Math.floor(index / 3);
+        const col = index % 3;
+        return (
+          <GuideTile
+            key={index}
+            mask={mask}
+            label={`${unit} ${index + 1}`}
+            tileSize={tileSize}
+            palette={palette}
+            skin={skin}
+            spotlight={spotlight}
+            borderStyle={{
+              borderRightColor: palette.gridLine,
+              borderRightWidth: col === 2 ? 0 : skin.metrics.gridLineWidth,
+              borderBottomColor: palette.gridLine,
+              borderBottomWidth: row === 2 ? 0 : skin.metrics.gridLineWidth,
+              marginRight: col === 2 ? 0 : skin.metrics.cellGap,
+              marginBottom: row === 2 ? 0 : skin.metrics.cellGap,
+            }}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -179,6 +277,7 @@ function GuideTile({
   palette,
   skin,
   spotlight,
+  borderStyle,
 }: {
   mask: number;
   label: string;
@@ -186,6 +285,7 @@ function GuideTile({
   palette: SkinPalette;
   skin: BoardSkin;
   spotlight: Digit | null;
+  borderStyle: ViewStyle;
 }) {
   const digits = Array.from({ length: GRID_SIZE }, (_, index) => index + 1)
     .filter((digit) => mask & (1 << (digit - 1)))
@@ -195,14 +295,15 @@ function GuideTile({
     <View
       accessible
       accessibilityLabel={`${label} unused digits: ${digits || 'none'}`}
-      style={{
-        width: tileSize,
-        height: tileSize,
-        backgroundColor: palette.cellBackground,
-        borderColor: palette.gridLine,
-        borderWidth: Math.max(1, skin.metrics.gridLineWidth),
-        borderRadius: skin.metrics.cellCornerRadius,
-      }}>
+      style={[
+        {
+          width: tileSize,
+          height: tileSize,
+          backgroundColor: palette.cellBackground,
+          borderRadius: skin.metrics.cellCornerRadius,
+        },
+        borderStyle,
+      ]}>
       {mask !== 0 && (
         <NotesGrid
           notes={mask}
@@ -219,12 +320,10 @@ function GuideTile({
 const styles = StyleSheet.create({
   guideFrame: {
     alignItems: 'flex-start',
-    gap: UNUSED_GUIDE_GAP,
   },
   boardRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: UNUSED_GUIDE_GAP,
   },
   strip: {
     flexDirection: 'row',

@@ -1,5 +1,14 @@
-import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MAX_BOARD_SIZE } from '@/components/game/board-grid';
@@ -7,6 +16,7 @@ import { BoardWithUnused } from '@/components/game/board-with-unused';
 import {
   BOX_GUIDE_SIDE_MIN_WIDTH,
   fitBoardWithUnusedSize,
+  getBoardWithUnusedGeometry,
 } from '@/components/game/board-with-unused-layout';
 import { NumberPad } from '@/components/game/number-pad';
 import { StatusBanner } from '@/components/game/status-banner';
@@ -33,6 +43,7 @@ const AUTO_CLEAR_UNITS: { unit: NoteUnit; label: string }[] = [
 ];
 const SPOTLIGHT_DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const SIDE_PAD_WIDTH = 200;
+const MIN_CLASSIC_BOARD_SIZE = 280;
 const EMPTY_SET = new Set<number>();
 
 export function ClassicUI() {
@@ -51,7 +62,8 @@ export function ClassicUI() {
   const setAutoClear = useSetAutoClear();
   const { skin, palette } = useActiveSkin();
   const layout = useActiveLayout();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const [measuredChromeHeight, setMeasuredChromeHeight] = useState<number | null>(null);
 
   useKeyboardControls(dispatch);
 
@@ -63,12 +75,40 @@ export function ClassicUI() {
     : width - 2 * Spacing.three;
   const boxPlacement = available >= BOX_GUIDE_SIDE_MIN_WIDTH ? 'side' : 'bottom';
   const guidesVisible = unusedNumbers.row || unusedNumbers.col || unusedNumbers.box;
+  const minimumFrameHeight = getBoardWithUnusedGeometry(
+    MIN_CLASSIC_BOARD_SIZE,
+    unusedNumbers,
+    boxPlacement,
+    skin.metrics,
+  ).height;
+  const availableHeight =
+    guidesVisible && measuredChromeHeight !== null
+      ? Math.max(height - measuredChromeHeight, minimumFrameHeight)
+      : undefined;
   const boardSize = fitBoardWithUnusedSize({
     availableWidth: available,
+    availableHeight,
     maxBoardSize: MAX_BOARD_SIZE,
     visibility: unusedNumbers,
     boxPlacement,
+    metrics: skin.metrics,
   });
+  const boardFrameHeight = getBoardWithUnusedGeometry(
+    boardSize,
+    unusedNumbers,
+    boxPlacement,
+    skin.metrics,
+  ).height;
+  const handleContentSizeChange = useCallback(
+    (_contentWidth: number, contentHeight: number) => {
+      if (!guidesVisible) return;
+      const next = Math.max(0, contentHeight - boardFrameHeight);
+      setMeasuredChromeHeight((previous) =>
+        previous !== null && Math.abs(previous - next) < 1 ? previous : next,
+      );
+    },
+    [boardFrameHeight, guidesVisible],
+  );
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
 
@@ -117,90 +157,100 @@ export function ClassicUI() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={[styles.safeArea, guidesVisible && styles.guidedSafeArea]}>
-        <View style={styles.toolbar}>
-          <ThemedText type="small" themeColor="textSecondary">
-            New game:
-          </ThemedText>
-          {DIFFICULTIES.map((difficulty) => (
-            <Chip
-              key={difficulty}
-              label={difficulty[0].toUpperCase() + difficulty.slice(1)}
-              active={game.meta?.difficulty === difficulty}
-              onPress={() => dispatch({ type: 'NEW_GAME', difficulty })}
-            />
-          ))}
-        </View>
-
-        {padSide ? (
-          <View style={styles.sideRow}>
-            {board}
-            {entryControls}
-          </View>
-        ) : (
-          board
-        )}
-
-        <StatusBanner status={game.status} difficulty={game.meta?.difficulty} palette={palette} />
-
-        {!padSide && entryControls}
-
-        <View style={styles.bottomRow}>
-          <Chip
-            label={`Undo${game.undoStack.length > 0 ? ` (${game.undoStack.length})` : ''}`}
-            active={false}
-            disabled={game.undoStack.length === 0}
-            onPress={() => dispatch({ type: 'UNDO' })}
-          />
-          <Chip
-            label="Autofill notes"
-            active={false}
-            disabled={game.status === 'won'}
-            onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
-          />
-          <View style={styles.switchRow}>
-            <Switch value={showErrors} onValueChange={setShowErrors} />
-            <ThemedText type="small">Show errors</ThemedText>
-          </View>
-          <View style={styles.switchRow}>
-            <Switch value={notesVisible} onValueChange={setNotesVisible} />
-            <ThemedText type="small">Show notes</ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.bottomRow}>
-          <View style={styles.switchRow}>
-            <Switch value={spotlight.on} onValueChange={setSpotlightOn} />
-            <ThemedText type="small">Spotlight</ThemedText>
-          </View>
-          <View style={styles.digitRow}>
-            {SPOTLIGHT_DIGITS.map((digit) => (
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={[styles.content, guidesVisible && styles.guidedContent]}
+          onContentSizeChange={handleContentSizeChange}
+          showsVerticalScrollIndicator={false}
+          style={styles.scroll}>
+          <View style={styles.toolbar}>
+            <ThemedText type="small" themeColor="textSecondary">
+              New game:
+            </ThemedText>
+            {DIFFICULTIES.map((difficulty) => (
               <Chip
-                key={digit}
-                label={String(digit)}
-                compact
-                active={spotlight.on && spotlight.digit === digit}
-                disabled={!spotlight.on}
-                onPress={() => setSpotlightDigit(digit)}
+                key={difficulty}
+                label={difficulty[0].toUpperCase() + difficulty.slice(1)}
+                active={game.meta?.difficulty === difficulty}
+                onPress={() => dispatch({ type: 'NEW_GAME', difficulty })}
               />
             ))}
           </View>
-        </View>
 
-        <View style={styles.bottomRow}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Auto-clear notes:
-          </ThemedText>
-          {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
-            <View key={unit} style={styles.switchRow}>
-              <Switch
-                value={game.autoClearNotes[unit]}
-                onValueChange={(on) => setAutoClear(unit, on)}
-              />
-              <ThemedText type="small">{label}</ThemedText>
+          {padSide ? (
+            <View style={styles.sideRow}>
+              {board}
+              {entryControls}
             </View>
-          ))}
-        </View>
+          ) : (
+            board
+          )}
+
+          <StatusBanner
+            status={game.status}
+            difficulty={game.meta?.difficulty}
+            palette={palette}
+          />
+
+          {!padSide && entryControls}
+
+          <View style={styles.bottomRow}>
+            <Chip
+              label={`Undo${game.undoStack.length > 0 ? ` (${game.undoStack.length})` : ''}`}
+              active={false}
+              disabled={game.undoStack.length === 0}
+              onPress={() => dispatch({ type: 'UNDO' })}
+            />
+            <Chip
+              label="Autofill notes"
+              active={false}
+              disabled={game.status === 'won'}
+              onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+            />
+            <View style={styles.switchRow}>
+              <Switch value={showErrors} onValueChange={setShowErrors} />
+              <ThemedText type="small">Show errors</ThemedText>
+            </View>
+            <View style={styles.switchRow}>
+              <Switch value={notesVisible} onValueChange={setNotesVisible} />
+              <ThemedText type="small">Show notes</ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.bottomRow}>
+            <View style={styles.switchRow}>
+              <Switch value={spotlight.on} onValueChange={setSpotlightOn} />
+              <ThemedText type="small">Spotlight</ThemedText>
+            </View>
+            <View style={styles.digitRow}>
+              {SPOTLIGHT_DIGITS.map((digit) => (
+                <Chip
+                  key={digit}
+                  label={String(digit)}
+                  compact
+                  active={spotlight.on && spotlight.digit === digit}
+                  disabled={!spotlight.on}
+                  onPress={() => setSpotlightDigit(digit)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.bottomRow}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Auto-clear notes:
+            </ThemedText>
+            {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
+              <View key={unit} style={styles.switchRow}>
+                <Switch
+                  value={game.autoClearNotes[unit]}
+                  onValueChange={(on) => setAutoClear(unit, on)}
+                />
+                <ThemedText type="small">{label}</ThemedText>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -315,6 +365,13 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    width: '100%',
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.three,
@@ -322,7 +379,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 72 : Spacing.three,
     paddingBottom: BottomTabInset + Spacing.three,
   },
-  guidedSafeArea: {
+  guidedContent: {
     justifyContent: 'flex-start',
   },
   toolbar: {

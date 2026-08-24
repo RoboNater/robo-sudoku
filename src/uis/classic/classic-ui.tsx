@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BoardGrid, MAX_BOARD_SIZE } from '@/components/game/board-grid';
+import { MAX_BOARD_SIZE } from '@/components/game/board-grid';
+import { BoardWithUnused } from '@/components/game/board-with-unused';
+import {
+  BOX_GUIDE_SIDE_MIN_WIDTH,
+  fitBoardWithUnusedSize,
+} from '@/components/game/board-with-unused-layout';
 import { NumberPad } from '@/components/game/number-pad';
 import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
@@ -41,6 +46,7 @@ export function ClassicUI() {
     spotlight,
     setSpotlightOn,
     setSpotlightDigit,
+    unusedNumbers,
   } = useSettings();
   const setAutoClear = useSetAutoClear();
   const { skin, palette } = useActiveSkin();
@@ -55,12 +61,19 @@ export function ClassicUI() {
   const available = padSide
     ? width - SIDE_PAD_WIDTH - Spacing.four - 2 * Spacing.three
     : width - 2 * Spacing.three;
-  const boardSize = Math.min(available, MAX_BOARD_SIZE);
+  const boxPlacement = available >= BOX_GUIDE_SIDE_MIN_WIDTH ? 'side' : 'bottom';
+  const guidesVisible = unusedNumbers.row || unusedNumbers.col || unusedNumbers.box;
+  const boardSize = fitBoardWithUnusedSize({
+    availableWidth: available,
+    maxBoardSize: MAX_BOARD_SIZE,
+    visibility: unusedNumbers,
+    boxPlacement,
+  });
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
 
   const board = (
-    <BoardGrid
+    <BoardWithUnused
       board={game.board}
       palette={palette}
       skin={skin}
@@ -69,6 +82,8 @@ export function ClassicUI() {
       conflicts={showErrors ? conflicts : EMPTY_SET}
       notesVisible={game.notesMode || notesVisible}
       spotlight={spotlight.on ? spotlight.digit : null}
+      unusedNumbers={unusedNumbers}
+      boxPlacement={boxPlacement}
       onSelectCell={(index) =>
         dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
       }
@@ -102,7 +117,7 @@ export function ClassicUI() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, guidesVisible && styles.guidedSafeArea]}>
         <View style={styles.toolbar}>
           <ThemedText type="small" themeColor="textSecondary">
             New game:
@@ -306,6 +321,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Platform.OS === 'web' ? 72 : Spacing.three,
     paddingBottom: BottomTabInset + Spacing.three,
+  },
+  guidedSafeArea: {
+    justifyContent: 'flex-start',
   },
   toolbar: {
     flexDirection: 'row',

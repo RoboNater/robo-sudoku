@@ -184,9 +184,6 @@ function GuideStrip({
 
   return (
     <View
-      accessible
-      accessibilityRole="summary"
-      accessibilityLabel={`Unused numbers by ${unit}`}
       style={[styles.strip, vertical && styles.verticalStrip, borderStyle]}>
       {masks.map((mask, index) => (
         <GuideTile
@@ -229,9 +226,6 @@ function GuideGrid({
 }: GuideProps & { guideSize: number }) {
   return (
     <View
-      accessible
-      accessibilityRole="summary"
-      accessibilityLabel="Unused numbers by box"
       style={[
         styles.boxGrid,
         {

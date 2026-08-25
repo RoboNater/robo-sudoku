@@ -8,6 +8,7 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -45,6 +46,9 @@ const SPOTLIGHT_DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const SIDE_PAD_WIDTH = 200;
 const MIN_CLASSIC_BOARD_SIZE = 280;
 const EMPTY_SET = new Set<number>();
+const CLASSIC_TOP_PADDING = Platform.OS === 'web' ? 72 : Spacing.three;
+const CLASSIC_BOTTOM_PADDING = BottomTabInset + Spacing.three;
+const CLASSIC_TOP_LEVEL_GAPS = 2 * Spacing.three;
 
 export function ClassicUI() {
   const game = useGame();
@@ -62,8 +66,10 @@ export function ClassicUI() {
   const setAutoClear = useSetAutoClear();
   const { skin, palette } = useActiveSkin();
   const layout = useActiveLayout();
-  const { width, height } = useWindowDimensions();
-  const [measuredChromeHeight, setMeasuredChromeHeight] = useState<number | null>(null);
+  const { width } = useWindowDimensions();
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [toolbarHeight, setToolbarHeight] = useState<number | null>(null);
+  const [controlsHeight, setControlsHeight] = useState<number | null>(null);
 
   useKeyboardControls(dispatch);
 
@@ -81,9 +87,17 @@ export function ClassicUI() {
     boxPlacement,
     skin.metrics,
   ).height;
+  const measuredChromeHeight =
+    toolbarHeight !== null && controlsHeight !== null
+      ? CLASSIC_TOP_PADDING +
+        CLASSIC_BOTTOM_PADDING +
+        CLASSIC_TOP_LEVEL_GAPS +
+        toolbarHeight +
+        controlsHeight
+      : null;
   const availableHeight =
-    guidesVisible && measuredChromeHeight !== null
-      ? Math.max(height - measuredChromeHeight, minimumFrameHeight)
+    guidesVisible && viewportHeight !== null && measuredChromeHeight !== null
+      ? Math.max(viewportHeight - measuredChromeHeight, minimumFrameHeight)
       : undefined;
   const boardSize = fitBoardWithUnusedSize({
     availableWidth: available,
@@ -93,22 +107,15 @@ export function ClassicUI() {
     boxPlacement,
     metrics: skin.metrics,
   });
-  const boardFrameHeight = getBoardWithUnusedGeometry(
-    boardSize,
-    unusedNumbers,
-    boxPlacement,
-    skin.metrics,
-  ).height;
-  const handleContentSizeChange = useCallback(
-    (_contentWidth: number, contentHeight: number) => {
-      if (!guidesVisible) return;
-      const next = Math.max(0, contentHeight - boardFrameHeight);
-      setMeasuredChromeHeight((previous) =>
-        previous !== null && Math.abs(previous - next) < 1 ? previous : next,
-      );
-    },
-    [boardFrameHeight, guidesVisible],
-  );
+  const handleViewportLayout = useCallback((event: LayoutChangeEvent) => {
+    setViewportHeight(event.nativeEvent.layout.height);
+  }, []);
+  const handleToolbarLayout = useCallback((event: LayoutChangeEvent) => {
+    setToolbarHeight(event.nativeEvent.layout.height);
+  }, []);
+  const handleControlsLayout = useCallback((event: LayoutChangeEvent) => {
+    setControlsHeight(event.nativeEvent.layout.height);
+  }, []);
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
 
@@ -160,10 +167,10 @@ export function ClassicUI() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={[styles.content, guidesVisible && styles.guidedContent]}
-          onContentSizeChange={handleContentSizeChange}
+          onLayout={handleViewportLayout}
           showsVerticalScrollIndicator={false}
           style={styles.scroll}>
-          <View style={styles.toolbar}>
+          <View onLayout={handleToolbarLayout} style={styles.toolbar}>
             <ThemedText type="small" themeColor="textSecondary">
               New game:
             </ThemedText>
@@ -186,69 +193,71 @@ export function ClassicUI() {
             board
           )}
 
-          <StatusBanner
-            status={game.status}
-            difficulty={game.meta?.difficulty}
-            palette={palette}
-          />
-
-          {!padSide && entryControls}
-
-          <View style={styles.bottomRow}>
-            <Chip
-              label={`Undo${game.undoStack.length > 0 ? ` (${game.undoStack.length})` : ''}`}
-              active={false}
-              disabled={game.undoStack.length === 0}
-              onPress={() => dispatch({ type: 'UNDO' })}
+          <View onLayout={handleControlsLayout} style={styles.controls}>
+            <StatusBanner
+              status={game.status}
+              difficulty={game.meta?.difficulty}
+              palette={palette}
             />
-            <Chip
-              label="Autofill notes"
-              active={false}
-              disabled={game.status === 'won'}
-              onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
-            />
-            <View style={styles.switchRow}>
-              <Switch value={showErrors} onValueChange={setShowErrors} />
-              <ThemedText type="small">Show errors</ThemedText>
-            </View>
-            <View style={styles.switchRow}>
-              <Switch value={notesVisible} onValueChange={setNotesVisible} />
-              <ThemedText type="small">Show notes</ThemedText>
-            </View>
-          </View>
 
-          <View style={styles.bottomRow}>
-            <View style={styles.switchRow}>
-              <Switch value={spotlight.on} onValueChange={setSpotlightOn} />
-              <ThemedText type="small">Spotlight</ThemedText>
+            {!padSide && entryControls}
+
+            <View style={styles.bottomRow}>
+              <Chip
+                label={`Undo${game.undoStack.length > 0 ? ` (${game.undoStack.length})` : ''}`}
+                active={false}
+                disabled={game.undoStack.length === 0}
+                onPress={() => dispatch({ type: 'UNDO' })}
+              />
+              <Chip
+                label="Autofill notes"
+                active={false}
+                disabled={game.status === 'won'}
+                onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+              />
+              <View style={styles.switchRow}>
+                <Switch value={showErrors} onValueChange={setShowErrors} />
+                <ThemedText type="small">Show errors</ThemedText>
+              </View>
+              <View style={styles.switchRow}>
+                <Switch value={notesVisible} onValueChange={setNotesVisible} />
+                <ThemedText type="small">Show notes</ThemedText>
+              </View>
             </View>
-            <View style={styles.digitRow}>
-              {SPOTLIGHT_DIGITS.map((digit) => (
-                <Chip
-                  key={digit}
-                  label={String(digit)}
-                  compact
-                  active={spotlight.on && spotlight.digit === digit}
-                  disabled={!spotlight.on}
-                  onPress={() => setSpotlightDigit(digit)}
-                />
+
+            <View style={styles.bottomRow}>
+              <View style={styles.switchRow}>
+                <Switch value={spotlight.on} onValueChange={setSpotlightOn} />
+                <ThemedText type="small">Spotlight</ThemedText>
+              </View>
+              <View style={styles.digitRow}>
+                {SPOTLIGHT_DIGITS.map((digit) => (
+                  <Chip
+                    key={digit}
+                    label={String(digit)}
+                    compact
+                    active={spotlight.on && spotlight.digit === digit}
+                    disabled={!spotlight.on}
+                    onPress={() => setSpotlightDigit(digit)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.bottomRow}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Auto-clear notes:
+              </ThemedText>
+              {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
+                <View key={unit} style={styles.switchRow}>
+                  <Switch
+                    value={game.autoClearNotes[unit]}
+                    onValueChange={(on) => setAutoClear(unit, on)}
+                  />
+                  <ThemedText type="small">{label}</ThemedText>
+                </View>
               ))}
             </View>
-          </View>
-
-          <View style={styles.bottomRow}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Auto-clear notes:
-            </ThemedText>
-            {AUTO_CLEAR_UNITS.map(({ unit, label }) => (
-              <View key={unit} style={styles.switchRow}>
-                <Switch
-                  value={game.autoClearNotes[unit]}
-                  onValueChange={(on) => setAutoClear(unit, on)}
-                />
-                <ThemedText type="small">{label}</ThemedText>
-              </View>
-            ))}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -376,8 +385,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
-    paddingTop: Platform.OS === 'web' ? 72 : Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
+    paddingTop: CLASSIC_TOP_PADDING,
+    paddingBottom: CLASSIC_BOTTOM_PADDING,
   },
   guidedContent: {
     justifyContent: 'flex-start',
@@ -388,6 +397,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     flexWrap: 'wrap',
     justifyContent: 'center',
+  },
+  controls: {
+    width: '100%',
+    alignItems: 'center',
+    gap: Spacing.three,
   },
   sideRow: {
     flexDirection: 'row',

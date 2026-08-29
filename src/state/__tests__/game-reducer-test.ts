@@ -35,6 +35,7 @@ const input = (state: GameState, digit: Digit) => gameReducer(state, { type: 'IN
 const clear = (state: GameState) => gameReducer(state, { type: 'CLEAR' });
 const undo = (state: GameState) => gameReducer(state, { type: 'UNDO' });
 const autofill = (state: GameState) => gameReducer(state, { type: 'AUTOFILL_NOTES' });
+const clearAllNotes = (state: GameState) => gameReducer(state, { type: 'CLEAR_ALL_NOTES' });
 const setAutoClear = (state: GameState, unit: NoteUnit, on: boolean) =>
   gameReducer(state, { type: 'SET_AUTO_CLEAR', unit, on });
 
@@ -290,6 +291,27 @@ describe('AUTOFILL_NOTES', () => {
   it('undoes all 81 cells in one step', () => {
     const before = stateWith(EMPTY, [], { 40: notesOf(4) });
     expect(undo(autofill(before)).board).toEqual(before.board);
+  });
+});
+
+describe('CLEAR_ALL_NOTES', () => {
+  it('clears notes across the board in one undoable action', () => {
+    const before = stateWith(EMPTY, [], {
+      0: notesOf(1, 4),
+      40: notesOf(2, 8),
+      80: notesOf(9),
+    });
+    const cleared = clearAllNotes(before);
+
+    expect(cleared.board.every((cell) => cell.notes === 0)).toBe(true);
+    expect(cleared.undoStack).toHaveLength(1);
+    expect(cleared.undoStack[0].cells).toHaveLength(3);
+    expect(undo(cleared).board).toEqual(before.board);
+  });
+
+  it('is a no-op when the board has no notes', () => {
+    const state = stateWith(EMPTY);
+    expect(clearAllNotes(state)).toBe(state);
   });
 });
 

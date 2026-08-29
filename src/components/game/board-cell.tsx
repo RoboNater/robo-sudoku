@@ -109,7 +109,7 @@ export function BoardCell({
  * `(d-1)%3` — unset digits leave an equally sized blank so every mark keeps its
  * place. Absolutely positioned because the cell itself is a centering flex box.
  */
-function NotesGrid({
+export function NotesGrid({
   notes,
   palette,
   skin,

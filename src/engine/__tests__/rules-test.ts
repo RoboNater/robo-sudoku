@@ -1,6 +1,7 @@
 import {
   getCandidates,
   getConflicts,
+  getUnusedDigitsByUnit,
   isBoardFull,
   isBoardSolved,
   peersOf,
@@ -121,6 +122,37 @@ describe('remainingCounts', () => {
       7: 9,
       8: 9,
       9: 9,
+    });
+  });
+});
+
+describe('getUnusedDigitsByUnit', () => {
+  it('starts every unit with all nine digits unused', () => {
+    const unused = getUnusedDigitsByUnit(boardFromString(EMPTY));
+    const allDigits = Array(9).fill(0b111111111);
+
+    expect(unused.row).toEqual(allDigits);
+    expect(unused.col).toEqual(allDigits);
+    expect(unused.box).toEqual(allDigits);
+  });
+
+  it('removes a filled digit from its row, column, and box only', () => {
+    const unused = getUnusedDigitsByUnit(boardFromString(edit(EMPTY, 10, '4')));
+    const four = 1 << 3;
+
+    expect(unused.row[1] & four).toBe(0);
+    expect(unused.col[1] & four).toBe(0);
+    expect(unused.box[0] & four).toBe(0);
+    expect(unused.row[0] & four).toBe(four);
+    expect(unused.col[0] & four).toBe(four);
+    expect(unused.box[1] & four).toBe(four);
+  });
+
+  it('reports no unused digits for a solved board', () => {
+    expect(getUnusedDigitsByUnit(boardFromString(SOLVED))).toEqual({
+      row: Array(9).fill(0),
+      col: Array(9).fill(0),
+      box: Array(9).fill(0),
     });
   });
 });

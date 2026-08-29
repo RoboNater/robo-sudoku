@@ -31,6 +31,13 @@ export interface SpotlightSettings {
   digit: Digit;
 }
 
+/** Which read-only unused-digit guides surround the puzzle board. */
+export interface UnusedNumberSettings {
+  row: boolean;
+  col: boolean;
+  box: boolean;
+}
+
 export interface SettingsState {
   activeUiId: string;
   showErrors: boolean;
@@ -45,6 +52,7 @@ export interface SettingsState {
    */
   autoClearNotes: AutoClearNotes;
   spotlight: SpotlightSettings;
+  unusedNumbers: UnusedNumberSettings;
   perUi: Record<string, PerUiSettings>;
 }
 
@@ -54,6 +62,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   notesVisible: true,
   autoClearNotes: { row: true, col: true, box: true },
   spotlight: { on: false, digit: 1 },
+  unusedNumbers: { row: false, col: false, box: false },
   perUi: {},
 };
 
@@ -81,6 +90,18 @@ function parseSpotlight(value: unknown): SpotlightSettings {
   };
 }
 
+/** Per-field tolerant: older stores simply receive the new off-by-default guides. */
+function parseUnusedNumbers(value: unknown): UnusedNumberSettings {
+  const fallback = DEFAULT_SETTINGS.unusedNumbers;
+  if (typeof value !== 'object' || value === null) return { ...fallback };
+  const { row, col, box } = value as Record<string, unknown>;
+  return {
+    row: typeof row === 'boolean' ? row : fallback.row,
+    col: typeof col === 'boolean' ? col : fallback.col,
+    box: typeof box === 'boolean' ? box : fallback.box,
+  };
+}
+
 function parsePerUi(value: unknown): Record<string, PerUiSettings> {
   if (typeof value !== 'object' || value === null) return {};
   const result: Record<string, PerUiSettings> = {};
@@ -105,7 +126,7 @@ export function parseSettings(raw: string | null): SettingsState {
     return DEFAULT_SETTINGS;
   }
   if (typeof parsed !== 'object' || parsed === null) return DEFAULT_SETTINGS;
-  const { activeUiId, showErrors, notesVisible, autoClearNotes, spotlight, perUi } =
+  const { activeUiId, showErrors, notesVisible, autoClearNotes, spotlight, unusedNumbers, perUi } =
     parsed as Record<string, unknown>;
   return {
     activeUiId: typeof activeUiId === 'string' ? activeUiId : DEFAULT_SETTINGS.activeUiId,
@@ -113,6 +134,7 @@ export function parseSettings(raw: string | null): SettingsState {
     notesVisible: typeof notesVisible === 'boolean' ? notesVisible : DEFAULT_SETTINGS.notesVisible,
     autoClearNotes: parseAutoClearNotes(autoClearNotes),
     spotlight: parseSpotlight(spotlight),
+    unusedNumbers: parseUnusedNumbers(unusedNumbers),
     perUi: parsePerUi(perUi),
   };
 }

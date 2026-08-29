@@ -11,7 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BoardGrid } from '@/components/game/board-grid';
+import { BoardWithUnused } from '@/components/game/board-with-unused';
+import {
+  BOX_GUIDE_SIDE_MIN_WIDTH,
+  fitBoardWithUnusedSize,
+} from '@/components/game/board-with-unused-layout';
 import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -59,18 +63,30 @@ const VERTICAL_CHROME =
 export function ZenUI() {
   const game = useGame();
   const dispatch = useGameDispatch();
-  const { showErrors, notesVisible, spotlight, setSpotlightOn, setSpotlightDigit } = useSettings();
+  const {
+    showErrors,
+    notesVisible,
+    spotlight,
+    setSpotlightOn,
+    setSpotlightDigit,
+    unusedNumbers,
+  } = useSettings();
   const { skin, palette } = useActiveSkin();
   const { width, height } = useWindowDimensions();
 
   useKeyboardControls(dispatch);
 
   const spotlightHeight = SPOTLIGHT_HEIGHT * (width < SPOTLIGHT_ONE_LINE_WIDTH ? 2 : 1);
-  const boardSize = Math.min(
-    width - 2 * Spacing.three,
-    height - VERTICAL_CHROME - spotlightHeight,
-    MAX_ZEN_BOARD,
-  );
+  const availableWidth = width - 2 * Spacing.three;
+  const boxPlacement = availableWidth >= BOX_GUIDE_SIDE_MIN_WIDTH ? 'side' : 'bottom';
+  const boardSize = fitBoardWithUnusedSize({
+    availableWidth,
+    availableHeight: height - VERTICAL_CHROME - spotlightHeight,
+    maxBoardSize: MAX_ZEN_BOARD,
+    visibility: unusedNumbers,
+    boxPlacement,
+    metrics: skin.metrics,
+  });
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
 
@@ -79,7 +95,7 @@ export function ZenUI() {
       <SafeAreaView style={styles.safeArea}>
         <StatusBanner status={game.status} difficulty={game.meta?.difficulty} palette={palette} />
 
-        <BoardGrid
+        <BoardWithUnused
           board={game.board}
           palette={palette}
           skin={skin}
@@ -88,6 +104,8 @@ export function ZenUI() {
           conflicts={showErrors ? conflicts : EMPTY_SET}
           notesVisible={game.notesMode || notesVisible}
           spotlight={spotlight.on ? spotlight.digit : null}
+          unusedNumbers={unusedNumbers}
+          boxPlacement={boxPlacement}
           onSelectCell={(index) =>
             dispatch({ type: 'SELECT', index: game.selected === index ? null : index })
           }

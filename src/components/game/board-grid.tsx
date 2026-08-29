@@ -4,6 +4,7 @@ import { GRID_SIZE, colOf, boxOf, rowOf, type Board, type Digit } from '@/engine
 import type { BoardSkin, SkinPalette } from '@/skins/types';
 
 import { BoardCell } from './board-cell';
+import { getBoardGeometry, gridLineWidthAfter } from './board-geometry';
 
 /** Widest a board ever gets, and the placeholder's cap before measurement. */
 export const MAX_BOARD_SIZE = 520;
@@ -37,7 +38,7 @@ export function BoardGrid({
   spotlight,
   onSelectCell,
 }: BoardGridProps) {
-  const { gridLineWidth, boxLineWidth, cellGap, boardCornerRadius } = skin.metrics;
+  const { boxLineWidth, cellGap, boardCornerRadius } = skin.metrics;
 
   // The statically rendered web HTML has no window to measure, so the caller's
   // size comes out empty. Hold the board's footprint with an empty frame instead
@@ -60,9 +61,7 @@ export function BoardGrid({
     );
   }
 
-  const cellSize = Math.floor(
-    (boardSize - 2 * boxLineWidth - 8 * gridLineWidth - 8 * cellGap) / GRID_SIZE,
-  );
+  const { cellSize } = getBoardGeometry(boardSize, skin.metrics);
 
   const selectedRow = selected !== null ? rowOf(selected) : null;
   const selectedCol = selected !== null ? colOf(selected) : null;
@@ -70,7 +69,7 @@ export function BoardGrid({
   const selectedValue = selected !== null ? board[selected].value : 0;
 
   const innerBorder = (edge: 'Right' | 'Bottom', line: number): ViewStyle => ({
-    [`border${edge}Width`]: line === GRID_SIZE - 1 ? 0 : line % 3 === 2 ? boxLineWidth : gridLineWidth,
+    [`border${edge}Width`]: gridLineWidthAfter(line, skin.metrics),
     [`border${edge}Color`]: line % 3 === 2 ? palette.boxLine : palette.gridLine,
     [`margin${edge}`]: line === GRID_SIZE - 1 ? 0 : cellGap,
   });
@@ -79,6 +78,8 @@ export function BoardGrid({
     <View
       style={{
         alignSelf: 'center',
+        width: boardSize,
+        height: boardSize,
         backgroundColor: palette.boardBackground,
         borderWidth: boxLineWidth,
         borderColor: palette.boxLine,

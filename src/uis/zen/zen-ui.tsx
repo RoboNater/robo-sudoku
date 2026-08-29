@@ -19,7 +19,7 @@ import {
 import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { getConflicts } from '@/engine/rules';
+import { getConflicts, hasAnyNotes } from '@/engine/rules';
 import type { Difficulty, Digit } from '@/engine/types';
 import type { SkinPalette } from '@/skins/types';
 import { useGame, useGameDispatch } from '@/state/game-context';
@@ -36,6 +36,9 @@ const EMPTY_SET = new Set<number>();
 const MAX_ZEN_BOARD = 640;
 const STATUS_HEIGHT = 28;
 const FOOTER_HEIGHT = 34;
+const FOOTER_MAX_WIDTH = 420;
+/** Measured breakpoint below which the footer groups wrap onto separate lines. */
+const FOOTER_ONE_LINE_WIDTH = 413;
 /** Tall enough that the spotlight row's buttons are a real touch target. */
 const SPOTLIGHT_HEIGHT = 36;
 /**
@@ -45,10 +48,9 @@ const SPOTLIGHT_HEIGHT = 36;
  */
 const SPOTLIGHT_ONE_LINE_WIDTH = 480;
 const TOP_PADDING = Platform.OS === 'web' ? 64 : Spacing.three;
-const VERTICAL_CHROME =
+const FIXED_VERTICAL_CHROME =
   STATUS_HEIGHT +
   STRIP_HEIGHT +
-  FOOTER_HEIGHT +
   4 * Spacing.four +
   TOP_PADDING +
   // The safe area's own bottom padding, which the board must also leave room for.
@@ -77,19 +79,22 @@ export function ZenUI() {
   useKeyboardControls(dispatch);
 
   const spotlightHeight = SPOTLIGHT_HEIGHT * (width < SPOTLIGHT_ONE_LINE_WIDTH ? 2 : 1);
+  const footerHeight = FOOTER_HEIGHT * (width < FOOTER_ONE_LINE_WIDTH ? 2 : 1);
   const availableWidth = width - 2 * Spacing.three;
   const boxPlacement = availableWidth >= BOX_GUIDE_SIDE_MIN_WIDTH ? 'side' : 'bottom';
   const boardSize = fitBoardWithUnusedSize({
     availableWidth,
-    availableHeight: height - VERTICAL_CHROME - spotlightHeight,
+    availableHeight: height - FIXED_VERTICAL_CHROME - spotlightHeight - footerHeight,
     maxBoardSize: MAX_ZEN_BOARD,
     visibility: unusedNumbers,
     boxPlacement,
     metrics: skin.metrics,
   });
 
-  const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
-  const hasNotes = game.board.some((cell) => cell.notes !== 0);
+  const [conflicts, hasNotes] = useMemo(
+    () => [getConflicts(game.board), hasAnyNotes(game.board)] as const,
+    [game.board],
+  );
 
   return (
     <View style={[styles.page, { backgroundColor: palette.boardBackground }]}>
@@ -151,25 +156,29 @@ export function ZenUI() {
               label="undo"
               palette={palette}
               disabled={game.undoStack.length === 0}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'UNDO' })}
             />
             <TextButton
               label="notes"
               palette={palette}
               active={game.notesMode}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
             />
             <TextButton
               label="fill"
               palette={palette}
               disabled={game.status === 'won'}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
             />
             <TextButton
-              label="clear"
+              label="wipe"
               accessibilityLabel="Clear all notes"
               palette={palette}
-              disabled={!hasNotes}
+              disabled={!hasNotes || game.status === 'won'}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'CLEAR_ALL_NOTES' })}
             />
           </View>
@@ -181,6 +190,7 @@ export function ZenUI() {
                 label={difficulty}
                 palette={palette}
                 active={game.meta?.difficulty === difficulty}
+                hitStyle={styles.footerHit}
                 onPress={() => dispatch({ type: 'NEW_GAME', difficulty })}
               />
             ))}
@@ -251,11 +261,15 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.three,
   },
   footer: {
+    width: '100%',
+    maxWidth: FOOTER_MAX_WIDTH,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.two,
-    height: FOOTER_HEIGHT,
+    flexWrap: 'wrap',
+    columnGap: Spacing.four,
+    rowGap: 0,
+    minHeight: FOOTER_HEIGHT,
   },
   spotlightRow: {
     flexDirection: 'row',
@@ -279,7 +293,11 @@ const styles = StyleSheet.create({
   footerGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.three,
+  },
+  footerHit: {
+    height: FOOTER_HEIGHT,
+    justifyContent: 'center',
   },
   quiet: {
     fontSize: 12,

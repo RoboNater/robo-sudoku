@@ -296,14 +296,17 @@ describe('AUTOFILL_NOTES', () => {
 
 describe('CLEAR_ALL_NOTES', () => {
   it('clears notes across the board in one undoable action', () => {
-    const before = stateWith(EMPTY, [], {
-      0: notesOf(1, 4),
+    const before = stateWith('5' + EMPTY.slice(1), [0], {
+      1: notesOf(1, 4),
       40: notesOf(2, 8),
       80: notesOf(9),
     });
     const cleared = clearAllNotes(before);
 
     expect(cleared.board.every((cell) => cell.notes === 0)).toBe(true);
+    expect(cleared.board.map((cell) => cell.value)).toEqual(
+      before.board.map((cell) => cell.value),
+    );
     expect(cleared.undoStack).toHaveLength(1);
     expect(cleared.undoStack[0].cells).toHaveLength(3);
     expect(undo(cleared).board).toEqual(before.board);

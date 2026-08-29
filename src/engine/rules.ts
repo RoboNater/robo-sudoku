@@ -49,6 +49,10 @@ export function isBoardFull(board: Board): boolean {
   return board.every((cell) => cell.value !== 0);
 }
 
+export function hasAnyNotes(board: Board): boolean {
+  return board.some((cell) => cell.notes !== 0);
+}
+
 /** Number of times each digit still needs to be entered to complete a board. */
 export function remainingCounts(board: Board): Record<Digit, number> {
   const counts = { 1: 9, 2: 9, 3: 9, 4: 9, 5: 9, 6: 9, 7: 9, 8: 9, 9: 9 } as Record<

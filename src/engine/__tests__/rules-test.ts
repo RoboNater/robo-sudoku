@@ -2,6 +2,7 @@ import {
   getCandidates,
   getConflicts,
   getUnusedDigitsByUnit,
+  hasAnyNotes,
   isBoardFull,
   isBoardSolved,
   peersOf,
@@ -9,7 +10,7 @@ import {
 } from '@/engine/rules';
 import { boxOf, colOf, rowOf } from '@/engine/types';
 
-import { EMPTY, SOLVED, boardFromString } from '../test-utils/boards';
+import { EMPTY, SOLVED, boardFromString, notesOf } from '../test-utils/boards';
 
 const edit = (base: string, index: number, char: string) =>
   base.slice(0, index) + char + base.slice(index + 1);
@@ -75,6 +76,13 @@ describe('isBoardFull / isBoardSolved', () => {
     const board = boardFromString(edit(SOLVED, 40, '-'));
     expect(isBoardFull(board)).toBe(false);
     expect(isBoardSolved(board)).toBe(false);
+  });
+});
+
+describe('hasAnyNotes', () => {
+  it('detects whether any cell has pencil notes', () => {
+    expect(hasAnyNotes(boardFromString(EMPTY))).toBe(false);
+    expect(hasAnyNotes(boardFromString(EMPTY, [], { 40: notesOf(2, 7) }))).toBe(true);
   });
 });
 

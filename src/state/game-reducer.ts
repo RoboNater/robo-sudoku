@@ -65,6 +65,7 @@ export type GameAction =
   | { type: 'SET_NOTES_MODE'; on: boolean }
   | { type: 'TOGGLE_NOTES_MODE' }
   | { type: 'AUTOFILL_NOTES' }
+  | { type: 'CLEAR_ALL_NOTES' }
   | { type: 'SET_AUTO_CLEAR'; unit: NoteUnit; on: boolean }
   | { type: 'UNDO' }
   | { type: 'HYDRATE'; state: GameState };
@@ -202,6 +203,14 @@ function autofillNotes(state: GameState): GameState {
   return commit(state, edits);
 }
 
+function clearAllNotes(state: GameState): GameState {
+  const edits: CellEdit[] = [];
+  for (let index = 0; index < BOARD_SIZE; index += 1) {
+    if (state.board[index].notes !== 0) edits.push({ index, notes: 0 });
+  }
+  return commit(state, edits);
+}
+
 function setAutoClear(state: GameState, unit: NoteUnit, on: boolean): GameState {
   if (state.autoClearNotes[unit] === on) return state;
   const next: NoteUnits = { ...state.autoClearNotes, [unit]: on };
@@ -262,6 +271,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'AUTOFILL_NOTES':
       return autofillNotes(state);
+
+    case 'CLEAR_ALL_NOTES':
+      return clearAllNotes(state);
 
     case 'SET_AUTO_CLEAR':
       return setAutoClear(state, action.unit, action.on);

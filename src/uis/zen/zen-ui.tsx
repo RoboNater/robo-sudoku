@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -6,6 +6,7 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type LayoutChangeEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -19,7 +20,7 @@ import {
 import { StatusBanner } from '@/components/game/status-banner';
 import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { getConflicts } from '@/engine/rules';
+import { getConflicts, hasAnyNotes } from '@/engine/rules';
 import type { Difficulty, Digit } from '@/engine/types';
 import type { SkinPalette } from '@/skins/types';
 import { useGame, useGameDispatch } from '@/state/game-context';
@@ -36,6 +37,8 @@ const EMPTY_SET = new Set<number>();
 const MAX_ZEN_BOARD = 640;
 const STATUS_HEIGHT = 28;
 const FOOTER_HEIGHT = 34;
+/** Keeps the two footer groups visually related instead of spanning a wide screen. */
+const FOOTER_MAX_WIDTH = 420;
 /** Tall enough that the spotlight row's buttons are a real touch target. */
 const SPOTLIGHT_HEIGHT = 36;
 /**
@@ -45,10 +48,9 @@ const SPOTLIGHT_HEIGHT = 36;
  */
 const SPOTLIGHT_ONE_LINE_WIDTH = 480;
 const TOP_PADDING = Platform.OS === 'web' ? 64 : Spacing.three;
-const VERTICAL_CHROME =
+const FIXED_VERTICAL_CHROME =
   STATUS_HEIGHT +
   STRIP_HEIGHT +
-  FOOTER_HEIGHT +
   4 * Spacing.four +
   TOP_PADDING +
   // The safe area's own bottom padding, which the board must also leave room for.
@@ -73,6 +75,7 @@ export function ZenUI() {
   } = useSettings();
   const { skin, palette } = useActiveSkin();
   const { width, height } = useWindowDimensions();
+  const [footerHeight, setFooterHeight] = useState(FOOTER_HEIGHT);
 
   useKeyboardControls(dispatch);
 
@@ -81,14 +84,20 @@ export function ZenUI() {
   const boxPlacement = availableWidth >= BOX_GUIDE_SIDE_MIN_WIDTH ? 'side' : 'bottom';
   const boardSize = fitBoardWithUnusedSize({
     availableWidth,
-    availableHeight: height - VERTICAL_CHROME - spotlightHeight,
+    availableHeight: height - FIXED_VERTICAL_CHROME - spotlightHeight - footerHeight,
     maxBoardSize: MAX_ZEN_BOARD,
     visibility: unusedNumbers,
     boxPlacement,
     metrics: skin.metrics,
   });
 
-  const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
+  const [conflicts, hasNotes] = useMemo(
+    () => [getConflicts(game.board), hasAnyNotes(game.board)] as const,
+    [game.board],
+  );
+  const handleFooterLayout = useCallback((event: LayoutChangeEvent) => {
+    setFooterHeight(event.nativeEvent.layout.height);
+  }, []);
 
   return (
     <View style={[styles.page, { backgroundColor: palette.boardBackground }]}>
@@ -144,25 +153,36 @@ export function ZenUI() {
           ))}
         </View>
 
-        <View style={styles.footer}>
+        <View onLayout={handleFooterLayout} style={styles.footer}>
           <View style={styles.footerGroup}>
             <TextButton
               label="undo"
               palette={palette}
               disabled={game.undoStack.length === 0}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'UNDO' })}
             />
             <TextButton
               label="notes"
               palette={palette}
               active={game.notesMode}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'SET_NOTES_MODE', on: !game.notesMode })}
             />
             <TextButton
               label="fill"
               palette={palette}
               disabled={game.status === 'won'}
+              hitStyle={styles.footerHit}
               onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+            />
+            <TextButton
+              label="wipe"
+              accessibilityLabel="Wipe all notes"
+              palette={palette}
+              disabled={!hasNotes || game.status === 'won'}
+              hitStyle={styles.footerHit}
+              onPress={() => dispatch({ type: 'CLEAR_ALL_NOTES' })}
             />
           </View>
           <View style={styles.footerGroup}>
@@ -173,6 +193,7 @@ export function ZenUI() {
                 label={difficulty}
                 palette={palette}
                 active={game.meta?.difficulty === difficulty}
+                hitStyle={styles.footerHit}
                 onPress={() => dispatch({ type: 'NEW_GAME', difficulty })}
               />
             ))}
@@ -185,6 +206,7 @@ export function ZenUI() {
 
 function TextButton({
   label,
+  accessibilityLabel,
   palette,
   active,
   activeColor,
@@ -193,6 +215,7 @@ function TextButton({
   onPress,
 }: {
   label: string;
+  accessibilityLabel?: string;
   palette: SkinPalette;
   active?: boolean;
   /** Overrides the usual active ink — the spotlight row uses its own accent. */
@@ -205,6 +228,7 @@ function TextButton({
   return (
     <Pressable
       role="button"
+      accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -240,11 +264,15 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.three,
   },
   footer: {
+    width: '100%',
+    maxWidth: FOOTER_MAX_WIDTH,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.four,
-    height: FOOTER_HEIGHT,
+    flexWrap: 'wrap',
+    columnGap: Spacing.four,
+    rowGap: 0,
+    minHeight: FOOTER_HEIGHT,
   },
   spotlightRow: {
     flexDirection: 'row',
@@ -269,6 +297,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+  },
+  footerHit: {
+    height: FOOTER_HEIGHT,
+    justifyContent: 'center',
   },
   quiet: {
     fontSize: 12,

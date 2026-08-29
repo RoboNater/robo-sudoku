@@ -25,7 +25,7 @@ import { useKeyboardControls } from '@/components/game/use-keyboard-controls';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
-import { getConflicts } from '@/engine/rules';
+import { getConflicts, hasAnyNotes } from '@/engine/rules';
 import type { Difficulty, Digit } from '@/engine/types';
 import type { SkinPalette } from '@/skins/types';
 import type { NoteUnit } from '@/state/game-reducer';
@@ -117,7 +117,10 @@ export function ClassicUI() {
     setControlsHeight(event.nativeEvent.layout.height);
   }, []);
 
-  const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
+  const [conflicts, hasNotes] = useMemo(
+    () => [getConflicts(game.board), hasAnyNotes(game.board)] as const,
+    [game.board],
+  );
 
   const board = (
     <BoardWithUnused
@@ -214,6 +217,12 @@ export function ClassicUI() {
                 active={false}
                 disabled={game.status === 'won'}
                 onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+              />
+              <Chip
+                label="Clear notes"
+                active={false}
+                disabled={!hasNotes || game.status === 'won'}
+                onPress={() => dispatch({ type: 'CLEAR_ALL_NOTES' })}
               />
               <View style={styles.switchRow}>
                 <Switch value={showErrors} onValueChange={setShowErrors} />

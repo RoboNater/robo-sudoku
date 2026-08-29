@@ -89,6 +89,7 @@ export function ZenUI() {
   });
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
+  const hasNotes = game.board.some((cell) => cell.notes !== 0);
 
   return (
     <View style={[styles.page, { backgroundColor: palette.boardBackground }]}>
@@ -164,6 +165,13 @@ export function ZenUI() {
               disabled={game.status === 'won'}
               onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
             />
+            <TextButton
+              label="clear"
+              accessibilityLabel="Clear all notes"
+              palette={palette}
+              disabled={!hasNotes}
+              onPress={() => dispatch({ type: 'CLEAR_ALL_NOTES' })}
+            />
           </View>
           <View style={styles.footerGroup}>
             <Text style={[styles.quiet, { color: palette.mutedText ?? palette.gridLine }]}>new</Text>
@@ -185,6 +193,7 @@ export function ZenUI() {
 
 function TextButton({
   label,
+  accessibilityLabel,
   palette,
   active,
   activeColor,
@@ -193,6 +202,7 @@ function TextButton({
   onPress,
 }: {
   label: string;
+  accessibilityLabel?: string;
   palette: SkinPalette;
   active?: boolean;
   /** Overrides the usual active ink — the spotlight row uses its own accent. */
@@ -205,6 +215,7 @@ function TextButton({
   return (
     <Pressable
       role="button"
+      accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -243,7 +254,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.four,
+    gap: Spacing.two,
     height: FOOTER_HEIGHT,
   },
   spotlightRow: {
@@ -268,7 +279,7 @@ const styles = StyleSheet.create({
   footerGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: Spacing.one,
   },
   quiet: {
     fontSize: 12,

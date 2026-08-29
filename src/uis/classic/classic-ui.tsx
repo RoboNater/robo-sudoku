@@ -118,6 +118,7 @@ export function ClassicUI() {
   }, []);
 
   const conflicts = useMemo(() => getConflicts(game.board), [game.board]);
+  const hasNotes = game.board.some((cell) => cell.notes !== 0);
 
   const board = (
     <BoardWithUnused
@@ -214,6 +215,12 @@ export function ClassicUI() {
                 active={false}
                 disabled={game.status === 'won'}
                 onPress={() => dispatch({ type: 'AUTOFILL_NOTES' })}
+              />
+              <Chip
+                label="Clear notes"
+                active={false}
+                disabled={!hasNotes}
+                onPress={() => dispatch({ type: 'CLEAR_ALL_NOTES' })}
               />
               <View style={styles.switchRow}>
                 <Switch value={showErrors} onValueChange={setShowErrors} />

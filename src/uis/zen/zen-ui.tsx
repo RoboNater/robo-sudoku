@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -6,6 +6,7 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type LayoutChangeEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -36,9 +37,8 @@ const EMPTY_SET = new Set<number>();
 const MAX_ZEN_BOARD = 640;
 const STATUS_HEIGHT = 28;
 const FOOTER_HEIGHT = 34;
+/** Keeps the two footer groups visually related instead of spanning a wide screen. */
 const FOOTER_MAX_WIDTH = 420;
-/** Measured breakpoint below which the footer groups wrap onto separate lines. */
-const FOOTER_ONE_LINE_WIDTH = 413;
 /** Tall enough that the spotlight row's buttons are a real touch target. */
 const SPOTLIGHT_HEIGHT = 36;
 /**
@@ -75,11 +75,11 @@ export function ZenUI() {
   } = useSettings();
   const { skin, palette } = useActiveSkin();
   const { width, height } = useWindowDimensions();
+  const [footerHeight, setFooterHeight] = useState(FOOTER_HEIGHT);
 
   useKeyboardControls(dispatch);
 
   const spotlightHeight = SPOTLIGHT_HEIGHT * (width < SPOTLIGHT_ONE_LINE_WIDTH ? 2 : 1);
-  const footerHeight = FOOTER_HEIGHT * (width < FOOTER_ONE_LINE_WIDTH ? 2 : 1);
   const availableWidth = width - 2 * Spacing.three;
   const boxPlacement = availableWidth >= BOX_GUIDE_SIDE_MIN_WIDTH ? 'side' : 'bottom';
   const boardSize = fitBoardWithUnusedSize({
@@ -95,6 +95,9 @@ export function ZenUI() {
     () => [getConflicts(game.board), hasAnyNotes(game.board)] as const,
     [game.board],
   );
+  const handleFooterLayout = useCallback((event: LayoutChangeEvent) => {
+    setFooterHeight(event.nativeEvent.layout.height);
+  }, []);
 
   return (
     <View style={[styles.page, { backgroundColor: palette.boardBackground }]}>
@@ -150,7 +153,7 @@ export function ZenUI() {
           ))}
         </View>
 
-        <View style={styles.footer}>
+        <View onLayout={handleFooterLayout} style={styles.footer}>
           <View style={styles.footerGroup}>
             <TextButton
               label="undo"
@@ -175,7 +178,7 @@ export function ZenUI() {
             />
             <TextButton
               label="wipe"
-              accessibilityLabel="Clear all notes"
+              accessibilityLabel="Wipe all notes"
               palette={palette}
               disabled={!hasNotes || game.status === 'won'}
               hitStyle={styles.footerHit}
